@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Waddle Waddle NY — Book a Birthday Party</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --p1:#F39C2D; --p1d:#E2860F;
+    --p2:#E8527A; --p2d:#D43A64;
+    --p3:#23ABB8; --p3d:#1690A0;
+    --p4:#8E5BD9; --p4d:#7644C4;
+    --ink:#3A3550; --muted:#6E6886; --line:#ECE7F5;
+    --bg:#F1E9F6; --card:#FFFFFF; --accent:#8B7DE8; --sage:#BED0B7;
+    --ok:#27AE60; --shadow:0 10px 30px rgba(120,80,200,.12);
+    --radius:20px;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; }
+  :focus-visible { outline:3px solid var(--accent); outline-offset:2px; border-radius:6px; }
+  @keyframes stepIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .panel.anim { animation:stepIn .28s ease; }
+  @media (prefers-reduced-motion: reduce) {
+    .panel.anim { animation:none; }
+    .pkg, .chip, .slot, .theme, .cta { transition:none; }
+    html { scroll-behavior:auto; }
+  }
+  body {
+    font-family:"Fredoka", ui-rounded, "Segoe UI", system-ui, sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+    min-height:100vh;
+  }
+
+  /* Header */
+  header.top {
+    text-align:center; padding:24px 16px 30px; background:var(--sage);
+  }
+  .logo-card { display:inline-block; }
+  .logo-card img { display:block; height:96px; width:auto; }
+  .tag { color:#494661; font-weight:600; margin-top:12px; font-size:15px; }
+  .wave { line-height:0; margin-top:-1px; }
+  .wave svg { display:block; width:100%; height:42px; }
+  .wave path { fill:var(--sage); }
+  @media (max-width:560px){ .logo-card img { height:66px; } }
+
+  /* Stepper */
+  .steps-bar {
+    max-width:1080px; margin:18px auto 6px; padding:0 16px;
+    display:flex; gap:8px; justify-content:center; flex-wrap:wrap;
+  }
+  .step-pill {
+    display:flex; align-items:center; gap:8px; cursor:default;
+    background:#fff; border:2px solid var(--line); color:var(--muted);
+    padding:8px 14px; border-radius:999px; font-weight:600; font-size:14px;
+    box-shadow:0 2px 8px rgba(120,80,200,.05);
+  }
+  .step-pill .num {
+    width:22px; height:22px; border-radius:50%; background:var(--line);
+    color:#fff; display:grid; place-items:center; font-size:13px; flex:none;
+  }
+  .step-pill.active { border-color:var(--accent); color:var(--accent); }
+  .step-pill.active .num { background:var(--accent); }
+  .step-pill.done { border-color:var(--ok); color:var(--ok); cursor:pointer; }
+  .step-pill.done .num { background:var(--ok); }
+
+  /* Layout */
+  .app-grid {
+    max-width:1080px; margin:14px auto 60px; padding:0 16px;
+    display:grid; grid-template-columns:1fr 340px; gap:22px; align-items:start;
+  }
+  .panel {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:26px 26px 30px; min-height:380px; min-width:0; /* let 1fr track shrink so chips scroll, not blow out the grid */
+  }
+  .panel h2 { margin:0 0 4px; font-size:24px; }
+  .panel .sub { color:var(--muted); margin:0 0 22px; font-size:14px; }
+
+  /* Summary */
+  .summary {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:22px; position:sticky; top:16px;
+  }
+  .summary h3 { margin:0 0 14px; font-size:20px; }
+  .venue { font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:14px; }
+  .venue b { color:var(--accent); display:block; font-size:14px; }
+  .sum-row { display:flex; justify-content:space-between; gap:10px; font-size:14px; padding:7px 0; }
+  .sum-row .k { color:var(--muted); }
+  .sum-row .v { font-weight:600; text-align:right; }
+  .sum-empty { color:#BDB7CF; font-style:italic; }
+  .divider { height:1px; background:var(--line); margin:12px 0; }
+  .grand { font-size:15px; }
+  .grand .v { font-size:18px; color:var(--accent); }
+  .deposit-line .v { color:var(--p2); }
+  .cta {
+    width:100%; margin-top:16px; border:0; cursor:pointer;
+    background:linear-gradient(90deg,var(--accent),#A99BF2);
+    color:#fff; font-family:inherit; font-weight:600; font-size:16px;
+    padding:15px; border-radius:14px; box-shadow:0 8px 20px rgba(123,79,224,.35);
+    transition:transform .08s ease, filter .15s ease;
+  }
+  .cta:hover { filter:brightness(1.05); }
+  .cta:active { transform:translateY(1px); }
+  .cta:disabled { background:#D9D2EC; box-shadow:none; cursor:not-allowed; color:#fff; }
+  .back-link { display:block; text-align:center; margin-top:12px; color:var(--muted); font-size:13px; cursor:pointer; background:none; border:0; width:100%; font-family:inherit; }
+  .back-link:hover { color:var(--accent); }
+
+  /* Date chips */
+  .field-label { font-weight:600; font-size:15px; margin:22px 0 10px; }
+  .field-label:first-child { margin-top:0; }
+  input[type="date"] {
+    font-family:inherit; font-size:15px; padding:11px 14px; border:2px solid var(--line);
+    border-radius:12px; color:var(--ink); width:100%; max-width:240px; background:#fff;
+  }
+  .tin {
+    font-family:inherit; font-size:15px; padding:12px 14px; border:2px solid var(--line);
+    border-radius:12px; width:100%; margin-top:10px; color:var(--ink); background:#fff;
+  }
+  .tin:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(139,125,232,.25); }
+  .chips { display:flex; gap:10px; overflow-x:auto; padding:4px 2px 8px; }
+  .chip {
+    flex:none; border:2px solid var(--line); background:#fff; border-radius:14px;
+    padding:10px 14px; cursor:pointer; text-align:center; min-width:74px; font-family:inherit;
+    transition:all .12s ease; color:var(--ink);
+  }
+  .chip .dow { font-size:12px; color:var(--muted); display:block; }
+  .chip .dm { font-size:15px; font-weight:600; }
+  .chip:hover { border-color:#C9BEF0; }
+  .chip.sel { background:var(--ink); border-color:var(--ink); color:#fff; }
+  .chip.sel .dow { color:#C9C3DC; }
+
+  .slots { display:flex; gap:10px; flex-wrap:wrap; }
+  .slot {
+    border:2px solid var(--line); background:#fff; border-radius:12px; padding:11px 16px;
+    cursor:pointer; font-family:inherit; font-size:14px; font-weight:600; color:var(--ink);
+    transition:all .12s ease;
+  }
+  .slot:hover { border-color:#C9BEF0; }
+  .slot.sel { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .hint { color:var(--muted); font-size:14px; font-style:italic; }
+
+  /* Kids stepper */
+  .stepper { display:inline-flex; align-items:center; gap:0; border:2px solid var(--line); border-radius:14px; overflow:hidden; }
+  .stepper button {
+    width:48px; height:48px; border:0; background:#F6F1FF; color:var(--accent);
+    font-size:24px; font-family:inherit; cursor:pointer; line-height:1;
+  }
+  .stepper button:disabled { color:#D2C9EA; cursor:not-allowed; }
+  .stepper .count { width:70px; text-align:center; font-size:22px; font-weight:600; }
+  .kid-note { color:var(--muted); font-size:13px; margin-top:8px; }
+
+  /* Package cards */
+  .pkgs { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .pkg {
+    border:2px solid var(--line); border-radius:18px; overflow:hidden; cursor:pointer;
+    background:#fff; display:flex; flex-direction:column; transition:transform .1s ease, box-shadow .15s ease, border-color .15s ease;
+    position:relative;
+  }
+  .pkg:hover { transform:translateY(-3px); box-shadow:0 14px 28px rgba(120,80,200,.16); }
+  .pkg.sel { border-color:var(--pc); box-shadow:0 0 0 3px var(--pc) inset, 0 14px 28px rgba(120,80,200,.18); }
+  .pkg .phead { background:var(--pc); color:#fff; padding:12px 16px 14px; text-align:center; }
+  .pkg .pname { font-weight:700; font-size:13px; letter-spacing:1px; opacity:.95; }
+  .pkg .ptitle { font-weight:700; font-size:19px; margin-top:2px; }
+  .pkg .badge {
+    position:absolute; top:10px; right:10px; background:#FFD23F; color:#7a5a00;
+    font-size:10px; font-weight:700; padding:4px 9px; border-radius:999px; letter-spacing:.5px;
+    box-shadow:0 2px 6px rgba(0,0,0,.15);
+  }
+  .pkg .pbody { padding:14px 16px 16px; display:flex; flex-direction:column; flex:1; }
+  .pkg .price { font-size:30px; font-weight:700; color:var(--pc); line-height:1; }
+  .pkg .price small { font-size:14px; color:var(--muted); font-weight:500; }
+  .pkg .orig { font-size:12px; color:var(--muted); text-decoration:line-through; margin-top:3px; }
+  .pkg .breakdown { font-size:12px; color:var(--muted); margin-top:4px; min-height:16px; }
+  .pkg ul { list-style:none; margin:12px 0 0; padding:0; flex:1; }
+  .pkg li { font-size:12.5px; padding:3px 0 3px 22px; position:relative; color:#5a5470; line-height:1.35; }
+  .pkg li::before { content:"✓"; position:absolute; left:0; color:var(--pc); font-weight:700; }
+  .pkg .choose { margin-top:14px; text-align:center; font-weight:600; font-size:14px; color:var(--pc); border:2px solid var(--pc); border-radius:10px; padding:8px; }
+  .pkg.sel .choose { background:var(--pc); color:#fff; }
+
+  /* Themes */
+  .theme-note { background:#FFF7E6; border:1px dashed #F0C764; color:#8a6d1f; font-size:13px; padding:10px 14px; border-radius:12px; margin-bottom:18px; }
+  .themes { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .theme {
+    border:2px solid var(--line); border-radius:14px; padding:16px 8px; text-align:center;
+    cursor:pointer; background:#fff; font-family:inherit; transition:all .12s ease;
+  }
+  .theme:hover { border-color:#C9BEF0; }
+  .theme.sel { border-color:var(--accent); background:#F6F1FF; }
+  .theme .emoji { font-size:30px; display:block; }
+  .theme .tname { font-size:13px; font-weight:600; margin-top:6px; color:var(--ink); }
+  .theme .tick { color:var(--accent); font-size:13px; height:16px; }
+
+  /* Review */
+  .review-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 24px; margin-bottom:8px; }
+  .rev { padding:10px 0; border-bottom:1px solid var(--line); }
+  .rev .k { font-size:12px; color:var(--muted); }
+  .rev .v { font-size:16px; font-weight:600; }
+  .price-box { background:#F8F4FF; border-radius:14px; padding:16px 18px; margin-top:18px; }
+  .price-box .sum-row { padding:6px 0; }
+
+  /* Confirmation */
+  .confirm-hero { text-align:center; padding:10px 0 6px; }
+  .confirm-hero .big { font-size:54px; }
+  .confirm-hero h2 { margin:8px 0 2px; }
+  .email-card { background:#F8F4FF; border:1px solid var(--line); border-radius:14px; margin-top:20px; overflow:hidden; }
+  .email-card .ehead { background:#EFE8FF; padding:10px 16px; font-size:13px; color:var(--accent); font-weight:600; }
+  .email-card pre {
+    margin:0; padding:16px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px;
+    color:#4a4560; white-space:pre-wrap; line-height:1.6;
+  }
+  .small-note { color:var(--muted); font-size:12px; margin-top:14px; text-align:center; }
+
+  /* Footer */
+  .site-foot {
+    max-width:1080px; margin:6px auto 54px; padding:24px 26px;
+    display:flex; gap:56px; flex-wrap:wrap; justify-content:center;
+    color:var(--muted); font-size:14px; text-align:center;
+  }
+  .site-foot h4 { margin:0 0 6px; color:var(--ink); font-size:15px; }
+  .site-foot p { margin:0; line-height:1.7; }
+  .site-foot a { color:var(--accent); text-decoration:none; font-weight:600; }
+  .site-foot a:hover { text-decoration:underline; }
+
+  @media (max-width:880px) {
+    .app-grid { grid-template-columns:1fr; }
+    .summary { position:static; }
+    .pkgs { grid-template-columns:1fr; }
+    .themes { grid-template-columns:repeat(2,1fr); }
+    .review-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="logo-card"><img src="assets/logo.png" alt="Waddle Waddle — Playground & Party Room" /></div>
+    <div class="tag">🎈 Book your private birthday party room 🎈</div>
+  </header>
+  <div class="wave"><svg viewBox="0 0 1440 42" preserveAspectRatio="none"><path d="M0,0 H1440 V16 C1120,44 980,2 720,20 C470,40 320,2 0,26 Z"></path></svg></div>
+
+  <nav class="steps-bar" id="stepsBar"></nav>
+
+  <main class="app-grid">
+    <section class="panel" id="panel"></section>
+    <aside class="summary" id="summary"></aside>
+  </main>
+
+  <footer class="site-foot">
+    <div class="foot-col"><h4>📍 Visit us</h4><p>120 Voice Rd.<br>Carle Place, NY 11514</p></div>
+    <div class="foot-col"><h4>📞 Contact</h4>
+      <p><a href="mailto:info@waddlewaddleny.com">info@waddlewaddleny.com</a><br>
+      <a href="tel:+15162439397">(516) 243-9397</a></p></div>
+  </footer>
+
+<script>
+/* ---------------- Data ---------------- */
+const PACKAGES = [
+  {
+    id:1, name:"PACKAGE 1", title:"⭐ Classic ⭐", base:599, orig:null, perKid:40,
+    cssvar:"var(--p1)", badge:null,
+    features:[
+      "10 kids","10 Adults","2Hr Private Party Room & Playground Access",
+      "2 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid",
+      "Age Number Balloon","Paper Goods","Setup & Cleanup"
+    ]
+  },
+  {
+    id:2, name:"PACKAGE 2", title:"💖 Premium 💖", base:899, orig:null, perKid:40,
+    cssvar:"var(--p2)", badge:null,
+    features:[
+      "10 kids","10 Adults","2Hr Private Party Room & Playground Access",
+      "2 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid",
+      "Age Number Balloon","Paper Goods","Setup & Cleanup",
+      "Fruit Pouch for Each Kid","2L Lemonade","Adult Water","Balloon Décor",
+      "Backdrop (HAPPY BIRTHDAY)","Themed Setup (Classic HAPPY BIRTHDAY Theme)"
+    ]
+  },
+  {
+    id:3, name:"PACKAGE 3", title:"🌟 Luxury 🌟", base:1399, orig:1793, perKid:50,
+    cssvar:"var(--p3)", badge:"BEST VALUE",
+    features:[
+      "10 kids","10 Adults","2Hr Private Party Room & Unlimited Playground Access",
+      "3 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid","Age Number Balloon",
+      "Paper Goods","Setup & Cleanup","Fruit Pouch for Each Kid","2L Lemonade","Adult Water",
+      "Dessert Table (Snack & Cup cakes)","Themed Paper Goods","Pinata","Balloon Décor",
+      "Backdrop (Party Theme Options)","Themed Setup (10 Party Theme Options)",
+      "Premium Themed Balloon Décor","Themed Balloon Garland","Return Pass for Each Kid"
+    ]
+  },
+  {
+    id:4, name:"PACKAGE 4", title:"👑 VIP 👑", base:1799, orig:1999, perKid:50,
+    cssvar:"var(--p4)", badge:"VIP EXPERIENCE",
+    features:[
+      "10 kids","10 Adults","2Hr Private Party Room & Unlimited Playground Access",
+      "3 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid","Age Number Balloon",
+      "Paper Goods","Setup & Cleanup","Fruit Pouch for Each Kid","2L Lemonade","Adult Water",
+      "Dessert Table (Snack & Cup cakes)","Themed Paper Goods","Pinata","Balloon Décor",
+      "Backdrop (Party Theme Options)","Themed Setup (10 Party Theme Options)",
+      "Premium Themed Balloon Décor","Themed Balloon Garland","Return Pass for Each Kid",
+      "Premium Balloon Installation (Fireworks / Cake / Garland / Flower)",
+      "Special Gift for Birthday Kids","Photography Assistance"
+    ]
+  }
+];
+
+const WEEKEND_SLOTS = ["10:00 AM – 12:00 PM","12:00 – 2:00 PM","2:00 – 4:00 PM","5:30 – 7:30 PM"];
+const WEEKDAY_SLOTS = ["5:30 – 7:30 PM"];
+
+// Sample themes — placeholder until the real list is provided.
+const THEMES = [
+  {e:"🦄",n:"Unicorn"},{e:"🦕",n:"Dinosaur"},{e:"👸",n:"Princess"},{e:"🦸",n:"Superhero"},
+  {e:"🦁",n:"Safari"},{e:"🌊",n:"Under the Sea"},{e:"🚀",n:"Space"},{e:"🎀",n:"Cocomelon"}
+];
+
+const DEPOSIT = 500;
+const TAX_RATE = 0.08625; // 8.625% sales tax (applied to party total, not the deposit)
+
+/* ---------------- State ---------------- */
+const state = { step:1, dateISO:null, time:null, kids:10, pkgId:null, theme:null, name:"", phone:"", email:"" };
+const STEPS = ["Date & Time","Package","Themes","Deposit"];
+
+/* ---------------- Helpers ---------------- */
+const $ = sel => document.querySelector(sel);
+const fmt = n => "$" + Number(n).toLocaleString("en-US");
+const money = n => "$" + Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pkgById = id => PACKAGES.find(p => p.id === id);
+function priceFor(pkg, kids){ return pkg.base + Math.max(0, kids - 10) * pkg.perKid; }
+function contactValid(){
+  return state.name.trim().length > 1
+    && state.phone.replace(/\D/g,"").length >= 7
+    && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email.trim());
+}
+function isWeekend(iso){ const d = new Date(iso + "T12:00:00"); const g = d.getDay(); return g === 0 || g === 6; }
+function slotsFor(iso){ return isWeekend(iso) ? WEEKEND_SLOTS : WEEKDAY_SLOTS; }
+function prettyDate(iso){
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+}
+function toISO(d){ return d.toISOString().slice(0,10); }
+
+/* ---------------- Render: stepper ---------------- */
+function renderSteps(){
+  const bar = $("#stepsBar");
+  bar.innerHTML = STEPS.map((label,i)=>{
+    const n = i+1;
+    const cls = state.step===n ? "active" : (state.step>n ? "done" : "");
+    return `<div class="step-pill ${cls}" data-go="${n}">
+      <span class="num">${state.step>n ? "✓" : n}</span> ${label}</div>`;
+  }).join("");
+  bar.querySelectorAll(".step-pill.done").forEach(el=>{
+    el.onclick = ()=>{ state.step = +el.dataset.go; render(); };
+  });
+}
+
+/* ---------------- Render: panel per step ---------------- */
+function renderPanel(){
+  const p = $("#panel");
+  if (state.step === 1) p.innerHTML = step1();
+  else if (state.step === 2) p.innerHTML = step2();
+  else if (state.step === 3) p.innerHTML = step3();
+  else if (state.step === 4) p.innerHTML = step4();
+  else p.innerHTML = step5();
+  p.classList.remove("anim"); void p.offsetWidth; p.classList.add("anim"); // retrigger step entrance
+  wirePanel();
+}
+
+function step1(){
+  // build one week of day chips from today
+  const today = new Date(); today.setHours(12,0,0,0);
+  let chips = "";
+  for (let i=0;i<7;i++){
+    const d = new Date(today); d.setDate(today.getDate()+i);
+    const iso = toISO(d);
+    const dow = d.toLocaleDateString("en-US",{weekday:"short"});
+    const dm = d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+    chips += `<button class="chip ${state.dateISO===iso?"sel":""}" data-iso="${iso}">
+      <span class="dow">${dow}</span><span class="dm">${dm}</span></button>`;
+  }
+  const minISO = toISO(today);
+
+  let slotsHtml;
+  if (!state.dateISO){
+    slotsHtml = `<p class="hint">Pick a date to see available time slots.</p>`;
+  } else {
+    const slots = slotsFor(state.dateISO);
+    const kind = isWeekend(state.dateISO) ? "Weekend" : "Weekday";
+    slotsHtml = `<p class="hint" style="margin-top:0">${kind} — ${slots.length} slot${slots.length>1?"s":""} available</p>
+      <div class="slots">` +
+      slots.map(s=>`<button class="slot ${state.time===s?"sel":""}" data-slot="${s}">${s}</button>`).join("") +
+      `</div>`;
+  }
+
+  return `
+    <h2>Select a date & time</h2>
+    <p class="sub">Choose when you'd like to celebrate, then how many kids are coming.</p>
+
+    <div class="field-label">📅 Date</div>
+    <input type="date" id="dateInput" min="${minISO}" value="${state.dateISO||""}" />
+    <div class="chips" style="margin-top:12px">${chips}</div>
+
+    <div class="field-label">⏰ Session time <span style="font-weight:400;color:var(--muted);font-size:13px">(2-hour private room)</span></div>
+    ${slotsHtml}
+
+    <div class="field-label">🧒 Number of kids</div>
+    <div class="stepper">
+      <button id="kMinus" ${state.kids<=10?"disabled":""}>−</button>
+      <span class="count" id="kCount">${state.kids}</span>
+      <button id="kPlus" ${state.kids>=25?"disabled":""}>+</button>
+    </div>
+    <div class="kid-note">10 kids included in every package · max 25 · 10 adults always included.
+      ${state.kids>10 ? `<br><b>${state.kids-10} extra kid${state.kids-10>1?"s":""}</b> — upcharge depends on package.` : ""}</div>
+  `;
+}
+
+function step2(){
+  const cards = PACKAGES.map(pkg=>{
+    const total = priceFor(pkg, state.kids);
+    const breakdown = `10 kids included · +${fmt(pkg.perKid)} per extra kid`;
+    const orig = pkg.orig ? `<div class="orig">Original ${fmt(pkg.orig)}</div>` : `<div class="orig" style="visibility:hidden">.</div>`;
+    return `
+      <div class="pkg ${state.pkgId===pkg.id?"sel":""}" style="--pc:${pkg.cssvar}" data-pkg="${pkg.id}" tabindex="0" role="button" aria-pressed="${state.pkgId===pkg.id}">
+        ${pkg.badge?`<span class="badge">${pkg.badge}</span>`:""}
+        <div class="phead">
+          <div class="pname">${pkg.name}</div>
+          <div class="ptitle">${pkg.title}</div>
+        </div>
+        <div class="pbody">
+          <div class="price">${fmt(total)} <small>total</small></div>
+          ${orig}
+          <div class="breakdown">${breakdown}</div>
+          <ul>${pkg.features.map(f=>`<li>${f}</li>`).join("")}</ul>
+          <div class="choose">${state.pkgId===pkg.id?"✓ Selected":"Choose this package"}</div>
+        </div>
+      </div>`;
+  }).join("");
+  return `
+    <h2>Choose your package</h2>
+    <p class="sub">Prices below already include your <b>${state.kids} kids</b>. Pick the experience you want.</p>
+    <div class="pkgs">${cards}</div>`;
+}
+
+function step3(){
+  const cards = THEMES.map((t)=>`
+    <button class="theme ${state.theme===t.n?"sel":""}" data-theme="${t.n}">
+      <span class="emoji">${t.e}</span>
+      <span class="tname">${t.n}</span>
+      <span class="tick">${state.theme===t.n?"✓ Selected":""}</span>
+    </button>`).join("");
+  return `
+    <h2>Customize your party 🎨</h2>
+    <p class="sub">Pick one theme. This step is optional.</p>
+    <div class="theme-note">⚠️ Sample themes shown — your final theme list will replace these.</div>
+    <div class="themes">${cards}</div>`;
+}
+
+function step4(){
+  const pkg = pkgById(state.pkgId);
+  const subtotal = priceFor(pkg, state.kids);
+  const extra = Math.max(0, state.kids-10);
+  const tax = subtotal * TAX_RATE;
+  const saleTotal = subtotal + tax;
+  const balance = saleTotal - DEPOSIT;
+  return `
+    <h2>Review & deposit</h2>
+    <p class="sub">Confirm the details, then pay the ${fmt(DEPOSIT)} deposit to lock in your date.</p>
+    <div class="review-grid">
+      <div class="rev"><div class="k">Date</div><div class="v">${prettyDate(state.dateISO)}</div></div>
+      <div class="rev"><div class="k">Time</div><div class="v">${state.time}</div></div>
+      <div class="rev"><div class="k">Kids</div><div class="v">${state.kids} kids + 10 adults</div></div>
+      <div class="rev"><div class="k">Package</div><div class="v">${pkg.title.replace(/[⭐💖🌟👑]/g,"").trim()}</div></div>
+      <div class="rev" style="grid-column:1/-1"><div class="k">Theme</div>
+        <div class="v">${state.theme || "—"}</div></div>
+    </div>
+    <div class="field-label" style="margin-top:20px">👤 Your details</div>
+    <input class="tin" id="fName" type="text" placeholder="Full name" value="${state.name}" autocomplete="name" />
+    <input class="tin" id="fPhone" type="tel" placeholder="Phone number" value="${state.phone}" autocomplete="tel" />
+    <input class="tin" id="fEmail" type="email" placeholder="Email address" value="${state.email}" autocomplete="email" />
+    <div class="kid-note">We'll send your reservation confirmation to this email.</div>
+    <div class="price-box">
+      <div class="sum-row"><span class="k">${pkg.name} base (10 kids)</span><span class="v">${money(pkg.base)}</span></div>
+      ${extra>0?`<div class="sum-row"><span class="k">${extra} extra kid${extra>1?"s":""} × ${fmt(pkg.perKid)}</span><span class="v">${money(extra*pkg.perKid)}</span></div>`:""}
+      <div class="divider"></div>
+      <div class="sum-row"><span class="k">Subtotal</span><span class="v">${money(subtotal)}</span></div>
+      <div class="sum-row"><span class="k">Tax (8.625%)</span><span class="v">${money(tax)}</span></div>
+      <div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(saleTotal)}</span></div>
+      <div class="sum-row deposit-line"><span class="k">Deposit due now (no tax)</span><span class="v">${money(DEPOSIT)}</span></div>
+      <div class="sum-row"><span class="k">Balance due at venue</span><span class="v">${money(balance)}</span></div>
+    </div>
+    <p class="small-note">Clicking “Pay deposit” simulates a successful payment for this mock.
+      A real Square payment link will be wired in here.</p>`;
+}
+
+function step5(){
+  const pkg = pkgById(state.pkgId);
+  const subtotal = priceFor(pkg, state.kids);
+  const tax = subtotal * TAX_RATE;
+  const saleTotal = subtotal + tax;
+  const balance = saleTotal - DEPOSIT;
+  const cleanTitle = pkg.title.replace(/[⭐💖🌟👑]/g,"").trim();
+  const email =
+`To:      info@waddlewaddleny.com
+Subject: 🎉 New Party Reservation — ${prettyDate(state.dateISO)}, ${state.time}
+
+A new birthday party deposit has been received.
+
+  Date:            ${prettyDate(state.dateISO)}
+  Time:            ${state.time}
+  Guests:          ${state.kids} kids + 10 adults
+  Package:         ${cleanTitle} (${pkg.name})
+  Theme:           ${state.theme || "None selected"}
+
+  Booked by:       ${state.name}
+  Phone:           ${state.phone}
+  Email:           ${state.email}
+
+  Subtotal:        ${money(subtotal)}
+  Tax (8.625%):    ${money(tax)}
+  Sale total:      ${money(saleTotal)}
+  Deposit paid:    ${money(DEPOSIT)} (no tax)
+  Balance due:     ${money(balance)} (at venue)
+
+— Sent automatically by the Waddle Waddle NY booking page`;
+  return `
+    <div class="confirm-hero">
+      <div class="big">🎉🐤🎈</div>
+      <h2>Reservation confirmed!</h2>
+      <p class="sub">Your ${fmt(DEPOSIT)} deposit was received and your date is locked in. A confirmation is on its way to ${state.email || "your email"}.</p>
+    </div>
+    <div class="email-card">
+      <div class="ehead">📧 Confirmation email that will be sent to the venue</div>
+      <pre>${email.replace(/</g,"&lt;")}</pre>
+    </div>
+    <p class="small-note">In the live version this email is delivered automatically after a real Square payment.</p>`;
+}
+
+/* ---------------- Render: summary ---------------- */
+function renderSummary(){
+  const s = $("#summary");
+  const pkg = state.pkgId ? pkgById(state.pkgId) : null;
+
+  const row = (k,v,empty) => `<div class="sum-row"><span class="k">${k}</span>
+    <span class="v ${empty?"sum-empty":""}">${v}</span></div>`;
+
+  let body = "";
+  body += row("Date", state.dateISO ? prettyDate(state.dateISO) : "Not selected", !state.dateISO);
+  body += row("Time", state.time || "Not selected", !state.time);
+  body += row("Kids", state.kids + " kids");
+  body += row("Package", pkg ? pkg.title.replace(/[⭐💖🌟👑]/g,"").trim() : "Not selected", !pkg);
+  if (state.theme) body += row("Theme", state.theme);
+
+  // Pricing (incl. deposit) only appears once a package is selected.
+  if (pkg){
+    const extra = Math.max(0, state.kids-10);
+    const subtotal = priceFor(pkg, state.kids);
+    const tax = subtotal * TAX_RATE;
+    const saleTotal = subtotal + tax;
+    const balance = saleTotal - DEPOSIT;
+    body += `<div class="divider"></div>`;
+    body += row("Package (10 kids)", money(pkg.base));
+    if (extra>0) body += row(`Extra kids (${extra} × ${fmt(pkg.perKid)})`, money(extra*pkg.perKid));
+    body += row("Subtotal", money(subtotal));
+    body += row("Tax (8.625%)", money(tax));
+    body += `<div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(saleTotal)}</span></div>`;
+    body += `<div class="sum-row deposit-line"><span class="k">Deposit due now</span><span class="v">${money(DEPOSIT)}</span></div>`;
+    body += row("Balance due", money(balance));
+  } else {
+    body += `<div class="divider"></div>`;
+    body += `<div class="sum-row"><span class="k sum-empty">Pricing shows after you pick a package</span><span class="v"></span></div>`;
+  }
+
+  // CTA
+  const cta = ctaConfig();
+  const back = state.step>1 && state.step<5
+    ? `<button class="back-link" id="backBtn">← Back</button>` : "";
+
+  s.innerHTML = `
+    <h3>Order Summary</h3>
+    <div class="venue">
+      <b>Waddle Waddle NY</b>
+      120 Voice Rd. Carle Place, NY 11514<br>
+      <span style="opacity:.7">(516) 243-9397</span>
+    </div>
+    ${body}
+    <button class="cta" id="ctaBtn" ${cta.disabled?"disabled":""}>${cta.label}</button>
+    ${back}
+  `;
+  $("#ctaBtn").onclick = cta.action;
+  if ($("#backBtn")) $("#backBtn").onclick = ()=>{ state.step--; render(); };
+}
+
+function ctaConfig(){
+  switch(state.step){
+    case 1:{
+      const ok = state.dateISO && state.time;
+      return { label:"Continue to packages", disabled:!ok, action:()=>{ if(ok){state.step=2;render();} } };
+    }
+    case 2:{
+      const ok = !!state.pkgId;
+      return { label:"Continue to themes", disabled:!ok, action:()=>{ if(ok){state.step=3;render();} } };
+    }
+    case 3:
+      return { label:"Continue to review", disabled:false, action:()=>{ state.step=4; render(); } };
+    case 4:{
+      const ok = contactValid();
+      return { label:`Pay ${fmt(DEPOSIT)} deposit`, disabled:!ok, action:()=>{ if(ok){ state.step=5; render(); } } };
+    }
+    default:
+      return { label:"Start a new booking", disabled:false, action:resetBooking };
+  }
+}
+
+function resetBooking(){
+  state.step=1; state.dateISO=null; state.time=null; state.kids=10; state.pkgId=null; state.theme=null;
+  state.name=""; state.phone=""; state.email="";
+  render();
+}
+
+/* ---------------- Wiring ---------------- */
+function wirePanel(){
+  if (state.step===1){
+    $("#dateInput").onchange = e=>{
+      state.dateISO = e.target.value || null;
+      if (state.dateISO && !slotsFor(state.dateISO).includes(state.time)) state.time=null;
+      render();
+    };
+    document.querySelectorAll(".chip").forEach(c=>{
+      c.onclick = ()=>{
+        state.dateISO = c.dataset.iso;
+        if (!slotsFor(state.dateISO).includes(state.time)) state.time=null;
+        render();
+      };
+    });
+    document.querySelectorAll(".slot").forEach(b=>{
+      b.onclick = ()=>{ state.time = b.dataset.slot; render(); };
+    });
+    if ($("#kMinus")) $("#kMinus").onclick = ()=>{ if(state.kids>10){state.kids--; render();} };
+    if ($("#kPlus")) $("#kPlus").onclick = ()=>{ if(state.kids<25){state.kids++; render();} };
+  }
+  if (state.step===2){
+    document.querySelectorAll(".pkg").forEach(c=>{
+      const choose = ()=>{ state.pkgId = +c.dataset.pkg; render(); };
+      c.onclick = choose;
+      c.onkeydown = e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); choose(); } };
+    });
+  }
+  if (state.step===3){
+    document.querySelectorAll(".theme").forEach(t=>{
+      t.onclick = ()=>{
+        const n = t.dataset.theme;
+        state.theme = (state.theme===n) ? null : n; // single-select, click again to clear
+        render();
+      };
+    });
+  }
+  if (state.step===4){
+    // update state on input WITHOUT re-rendering (keeps focus); just toggle the pay button
+    const upd = ()=>{ const b=$("#ctaBtn"); if(b) b.disabled = !contactValid(); };
+    const bind = (id,key)=>{ const el=$(id); if(el) el.oninput = e=>{ state[key]=e.target.value; upd(); }; };
+    bind("#fName","name"); bind("#fPhone","phone"); bind("#fEmail","email");
+  }
+}
+
+/* ---------------- Root render ---------------- */
+function render(){
+  renderSteps();
+  renderPanel();
+  renderSummary();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+render();
+</script>
+</body>
+</html>
