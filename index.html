@@ -320,6 +320,8 @@ const TAX_RATE = 0.08625; // 8.625% sales tax (applied to party total, not the d
 /* ---------------- State ---------------- */
 const state = { step:1, dateISO:null, time:null, kids:10, pkgId:null, theme:null, name:"", phone:"", email:"" };
 const STEPS = ["Date & Time","Package","Themes","Deposit"];
+let prevStep = 1;        // tracks step changes for scroll behavior
+let scrollNext = null;   // selector to reveal after a within-step selection
 
 /* ---------------- Helpers ---------------- */
 const $ = sel => document.querySelector(sel);
@@ -400,10 +402,10 @@ function step1(){
     <input type="date" id="dateInput" min="${minISO}" value="${state.dateISO||""}" />
     <div class="chips" style="margin-top:12px">${chips}</div>
 
-    <div class="field-label">⏰ Session time <span style="font-weight:400;color:var(--muted);font-size:13px">(2-hour private room)</span></div>
+    <div class="field-label" id="sessionTimes">⏰ Session time <span style="font-weight:400;color:var(--muted);font-size:13px">(2-hour private room)</span></div>
     ${slotsHtml}
 
-    <div class="field-label">🧒 Number of kids</div>
+    <div class="field-label" id="kidsField">🧒 Number of kids</div>
     <div class="stepper">
       <button id="kMinus" ${state.kids<=10?"disabled":""}>−</button>
       <span class="count" id="kCount">${state.kids}</span>
@@ -623,24 +625,24 @@ function wirePanel(){
     $("#dateInput").onchange = e=>{
       state.dateISO = e.target.value || null;
       if (state.dateISO && !slotsFor(state.dateISO).includes(state.time)) state.time=null;
-      render();
+      scrollNext = "#sessionTimes"; render();
     };
     document.querySelectorAll(".chip").forEach(c=>{
       c.onclick = ()=>{
         state.dateISO = c.dataset.iso;
         if (!slotsFor(state.dateISO).includes(state.time)) state.time=null;
-        render();
+        scrollNext = "#sessionTimes"; render();
       };
     });
     document.querySelectorAll(".slot").forEach(b=>{
-      b.onclick = ()=>{ state.time = b.dataset.slot; render(); };
+      b.onclick = ()=>{ state.time = b.dataset.slot; scrollNext = "#kidsField"; render(); };
     });
     if ($("#kMinus")) $("#kMinus").onclick = ()=>{ if(state.kids>10){state.kids--; render();} };
     if ($("#kPlus")) $("#kPlus").onclick = ()=>{ if(state.kids<25){state.kids++; render();} };
   }
   if (state.step===2){
     document.querySelectorAll(".pkg").forEach(c=>{
-      const choose = ()=>{ state.pkgId = +c.dataset.pkg; render(); };
+      const choose = ()=>{ state.pkgId = +c.dataset.pkg; scrollNext = "#summary"; render(); };
       c.onclick = choose;
       c.onkeydown = e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); choose(); } };
     });
@@ -650,7 +652,7 @@ function wirePanel(){
       t.onclick = ()=>{
         const n = t.dataset.theme;
         state.theme = (state.theme===n) ? null : n; // single-select, click again to clear
-        render();
+        scrollNext = "#summary"; render();
       };
     });
   }
@@ -664,10 +666,26 @@ function wirePanel(){
 
 /* ---------------- Root render ---------------- */
 function render(){
+  const stepChanged = state.step !== prevStep;
   renderSteps();
   renderPanel();
   renderSummary();
-  window.scrollTo({top:0,behavior:"smooth"});
+  if (stepChanged){
+    window.scrollTo({top:0, behavior:"smooth"});                 // new step -> start at the top
+  } else if (scrollNext){
+    if (scrollNext === "#summary"){
+      // the summary + Continue button sits below the panel on mobile; reveal it there
+      if (window.matchMedia("(max-width:880px)").matches){
+        const el = document.querySelector("#summary");
+        if (el) el.scrollIntoView({behavior:"smooth", block:"start"});
+      }
+    } else {
+      const el = document.querySelector(scrollNext);
+      if (el) el.scrollIntoView({behavior:"smooth", block:"nearest"}); // no-op if already in view
+    }
+  }
+  scrollNext = null;
+  prevStep = state.step;
 }
 render();
 </script>
