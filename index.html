@@ -411,7 +411,7 @@ function step1(){
       <span class="count" id="kCount">${state.kids}</span>
       <button id="kPlus" ${state.kids>=25?"disabled":""}>+</button>
     </div>
-    <div class="kid-note">10 kids included in every package · max 25 · 10 adults always included.
+    <div class="kid-note">10 kids included in every package · max 25 · adults always included.
       ${state.kids>10 ? `<br><b>${state.kids-10} extra kid${state.kids-10>1?"s":""}</b> — upcharge depends on package.` : ""}</div>
   `;
 }
