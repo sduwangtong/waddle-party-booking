@@ -84,6 +84,7 @@
     background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
     padding:22px; position:sticky; top:16px;
   }
+  .summary-compact { display:none; }
   .summary h3 { margin:0 0 14px; font-size:20px; }
   .venue { font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:14px; }
   .venue b { color:var(--accent); display:block; font-size:14px; }
@@ -227,6 +228,8 @@
   @media (max-width:880px) {
     .app-grid { grid-template-columns:1fr; }
     .summary { position:static; }
+    .summary-detail { display:none; }                 /* full order summary is desktop-only */
+    .summary-compact { display:block; margin-bottom:4px; }
     .pkgs { grid-template-columns:1fr; }
     .themes { grid-template-columns:repeat(2,1fr); }
     .review-grid { grid-template-columns:1fr; }
@@ -261,7 +264,7 @@ const PACKAGES = [
     id:1, name:"PACKAGE 1", title:"⭐ Classic ⭐", base:599, orig:null, perKid:40,
     cssvar:"var(--p1)", badge:null,
     features:[
-      "10 kids","10 Adults","2Hr Private Party Room & Playground Access",
+      "10 kids","Adults","2Hr Private Party Room & Playground Access",
       "2 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid",
       "Age Number Balloon","Paper Goods","Setup & Cleanup"
     ]
@@ -270,7 +273,7 @@ const PACKAGES = [
     id:2, name:"PACKAGE 2", title:"💖 Premium 💖", base:899, orig:null, perKid:40,
     cssvar:"var(--p2)", badge:null,
     features:[
-      "10 kids","10 Adults","2Hr Private Party Room & Playground Access",
+      "10 kids","Adults","2Hr Private Party Room & Playground Access",
       "2 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid",
       "Age Number Balloon","Paper Goods","Setup & Cleanup",
       "Fruit Pouch for Each Kid","2L Lemonade","Adult Water","Balloon Décor",
@@ -281,7 +284,7 @@ const PACKAGES = [
     id:3, name:"PACKAGE 3", title:"🌟 Luxury 🌟", base:1399, orig:1793, perKid:50,
     cssvar:"var(--p3)", badge:"BEST VALUE",
     features:[
-      "10 kids","10 Adults","2Hr Private Party Room & Unlimited Playground Access",
+      "10 kids","Adults","2Hr Private Party Room & Unlimited Playground Access",
       "3 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid","Age Number Balloon",
       "Paper Goods","Setup & Cleanup","Fruit Pouch for Each Kid","2L Lemonade","Adult Water",
       "Dessert Table (Snack & Cup cakes)","Themed Paper Goods","Pinata","Balloon Décor",
@@ -293,7 +296,7 @@ const PACKAGES = [
     id:4, name:"PACKAGE 4", title:"👑 VIP 👑", base:1799, orig:1999, perKid:50,
     cssvar:"var(--p4)", badge:"VIP EXPERIENCE",
     features:[
-      "10 kids","10 Adults","2Hr Private Party Room & Unlimited Playground Access",
+      "10 kids","Adults","2Hr Private Party Room & Unlimited Playground Access",
       "3 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid","Age Number Balloon",
       "Paper Goods","Setup & Cleanup","Fruit Pouch for Each Kid","2L Lemonade","Adult Water",
       "Dessert Table (Snack & Cup cakes)","Themed Paper Goods","Pinata","Balloon Décor",
@@ -470,7 +473,7 @@ function step4(){
     <div class="review-grid">
       <div class="rev"><div class="k">Date</div><div class="v">${prettyDate(state.dateISO)}</div></div>
       <div class="rev"><div class="k">Time</div><div class="v">${state.time}</div></div>
-      <div class="rev"><div class="k">Kids</div><div class="v">${state.kids} kids + 10 adults</div></div>
+      <div class="rev"><div class="k">Kids</div><div class="v">${state.kids} kids + adults</div></div>
       <div class="rev"><div class="k">Package</div><div class="v">${pkg.title.replace(/[⭐💖🌟👑]/g,"").trim()}</div></div>
       <div class="rev" style="grid-column:1/-1"><div class="k">Theme</div>
         <div class="v">${state.theme || "—"}</div></div>
@@ -509,7 +512,7 @@ A new birthday party deposit has been received.
 
   Date:            ${prettyDate(state.dateISO)}
   Time:            ${state.time}
-  Guests:          ${state.kids} kids + 10 adults
+  Guests:          ${state.kids} kids + adults
   Package:         ${cleanTitle} (${pkg.name})
   Theme:           ${state.theme || "None selected"}
 
@@ -553,6 +556,7 @@ function renderSummary(){
   if (state.theme) body += row("Theme", state.theme);
 
   // Pricing (incl. deposit) only appears once a package is selected.
+  let compact = ""; // condensed total shown on mobile, where the full summary is hidden
   if (pkg){
     const extra = Math.max(0, state.kids-10);
     const subtotal = priceFor(pkg, state.kids);
@@ -567,6 +571,8 @@ function renderSummary(){
     body += `<div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(saleTotal)}</span></div>`;
     body += `<div class="sum-row deposit-line"><span class="k">Deposit due now</span><span class="v">${money(DEPOSIT)}</span></div>`;
     body += row("Balance due", money(balance));
+    compact = `<div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(saleTotal)}</span></div>
+      <div class="sum-row deposit-line"><span class="k">Deposit due now</span><span class="v">${money(DEPOSIT)}</span></div>`;
   } else {
     body += `<div class="divider"></div>`;
     body += `<div class="sum-row"><span class="k sum-empty">Pricing shows after you pick a package</span><span class="v"></span></div>`;
@@ -578,13 +584,16 @@ function renderSummary(){
     ? `<button class="back-link" id="backBtn">← Back</button>` : "";
 
   s.innerHTML = `
-    <h3>Order Summary</h3>
-    <div class="venue">
-      <b>Waddle Waddle NY</b>
-      120 Voice Rd. Carle Place, NY 11514<br>
-      <span style="opacity:.7">(516) 243-9397</span>
+    <div class="summary-detail">
+      <h3>Order Summary</h3>
+      <div class="venue">
+        <b>Waddle Waddle NY</b>
+        120 Voice Rd. Carle Place, NY 11514<br>
+        <span style="opacity:.7">(516) 243-9397</span>
+      </div>
+      ${body}
     </div>
-    ${body}
+    ${compact ? `<div class="summary-compact">${compact}</div>` : ""}
     <button class="cta" id="ctaBtn" ${cta.disabled?"disabled":""}>${cta.label}</button>
     ${back}
   `;
