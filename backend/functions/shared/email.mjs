@@ -42,10 +42,10 @@ function htmlTable(b) {
 
 const textSummary = b => summaryRows(b).map(([k, v]) => `  ${(k + ':').padEnd(30)}${v}`).join('\n');
 
-async function send({ to, subject, html, text, replyTo }) {
+async function send({ to, cc, subject, html, text, replyTo }) {
   await ses.send(new SendEmailCommand({
     Source: FROM,
-    Destination: { ToAddresses: [to] },
+    Destination: { ToAddresses: [to], CcAddresses: cc ? [cc] : undefined },
     ReplyToAddresses: replyTo ? [replyTo] : undefined,
     Message: {
       Subject: { Data: subject, Charset: 'UTF-8' },
@@ -97,6 +97,7 @@ export async function sendCustomerConfirmation(b) {
   const text = `We got your party request, ${firstName(b.name)}!\n\nPay the ${money(b.deposit)} deposit to lock in your date. Once received, your reservation is confirmed.\n\n${textSummary(b)}\n\nPay with Zelle: open your bank app, choose Zelle, and pay ${money(b.deposit)} to Waddle Waddle Inc.\nQR code: ${QR_URL}\nThen reply to this email.\n\nRemaining balance of ${money(b.balance)} is due at the venue.\n\n${VENUE_ADDR}`;
   await send({
     to: b.email,
+    cc: VENUE, // copy the venue on the exact email the customer receives
     replyTo: SENDER,
     subject: 'We got your Waddle Waddle NY party request 🐤',
     html, text,
