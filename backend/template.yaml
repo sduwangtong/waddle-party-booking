@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Waddle Waddle NY — booking request to confirmation emails (SES). No online payment; the $500 deposit is collected manually via Zelle.
+
+Parameters:
+  SenderEmail:
+    Type: String
+    Default: info@waddlewaddleny.com
+    Description: Domain-verified SES sender (From) for both emails
+  VenueEmail:
+    Type: String
+    Default: info@waddlewaddleny.com
+    Description: Where the new-booking alert is delivered
+  AllowedOrigin:
+    Type: String
+    Default: https://sduwangtong.github.io
+    Description: Site origin allowed to call the API (CORS)
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    MemorySize: 256
+    Timeout: 15
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        ALLOWED_ORIGIN: !Ref AllowedOrigin
+        SES_SENDER_EMAIL: !Ref SenderEmail
+        VENUE_EMAIL: !Ref VenueEmail
+
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowHeaders:
+          - Content-Type
+        AllowMethods:
+          - POST
+          - OPTIONS
+
+  SubmitBookingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: WaddleBooking-SubmitBooking
+      Handler: submitBooking/index.handler
+      CodeUri: functions/
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: '*'
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /booking-request
+            Method: POST
+
+Outputs:
+  ApiBaseUrl:
+    Description: Base URL — put this in index.html API_BASE
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  SubmitUrl:
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/prod/booking-request"

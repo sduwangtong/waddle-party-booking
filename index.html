@@ -153,6 +153,20 @@
   .stepper .count { width:70px; text-align:center; font-size:22px; font-weight:600; }
   .kid-note { color:var(--muted); font-size:13px; margin-top:8px; }
 
+  /* Add-on extras (step 3) */
+  .opt-cat-title { font-weight:600; font-size:14px; color:var(--accent); margin:18px 0 8px; }
+  .opt-list { display:flex; flex-direction:column; gap:8px; }
+  .opt-row { display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border:2px solid var(--line); border-radius:12px; padding:9px 12px; background:#fff; transition:border-color .12s ease, background .12s ease; }
+  .opt-row.on { border-color:var(--accent); background:#FAF8FF; }
+  .opt-info { display:flex; flex-direction:column; min-width:0; }
+  .opt-name { font-size:14px; font-weight:500; color:var(--ink); }
+  .opt-price { font-size:12px; color:var(--muted); }
+  .opt-stepper { display:inline-flex; align-items:center; border:2px solid var(--line); border-radius:10px; overflow:hidden; flex:none; }
+  .opt-stepper button { width:34px; height:34px; border:0; background:#F6F1FF; color:var(--accent); font-size:18px; font-family:inherit; cursor:pointer; line-height:1; }
+  .opt-stepper button:disabled { color:#D2C9EA; cursor:not-allowed; }
+  .opt-q { width:32px; text-align:center; font-size:15px; font-weight:600; }
+
   /* Package cards */
   .pkgs { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
   .pkg {
@@ -261,49 +275,47 @@
 /* ---------------- Data ---------------- */
 const PACKAGES = [
   {
-    id:1, name:"PACKAGE 1", title:"⭐ Classic ⭐", base:599, orig:null, perKid:40,
+    id:1, name:"PACKAGE 1", title:"⭐ Classic ⭐", base:599, orig:null, perKid:35,
     cssvar:"var(--p1)", badge:null,
     features:[
-      "10 kids","Adults","2Hr Private Party Room & Playground Access",
+      "10 kids","10 Adults","2Hr Private Party Room & Playground Access",
       "2 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid",
-      "Age Number Balloon","Paper Goods","Setup & Cleanup"
+      "Age Number Balloon","Classic Tableware","Setup & Cleanup"
     ]
   },
   {
-    id:2, name:"PACKAGE 2", title:"💖 Premium 💖", base:899, orig:null, perKid:40,
+    id:2, name:"PACKAGE 2", title:"💖 Premium 💖", base:899, orig:null, perKid:35,
     cssvar:"var(--p2)", badge:null,
     features:[
-      "10 kids","Adults","2Hr Private Party Room & Playground Access",
+      "10 kids","10 Adults","2Hr Private Party Room & Playground Access",
       "2 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid",
-      "Age Number Balloon","Paper Goods","Setup & Cleanup",
-      "Fruit Pouch for Each Kid","2L Lemonade","Adult Water","Balloon Décor",
-      "Backdrop (HAPPY BIRTHDAY)","Themed Setup (Classic HAPPY BIRTHDAY Theme)"
+      "Age Number Balloon","Classic Tableware","Setup & Cleanup",
+      "Fruit Pouch for Each Kid","2L Lemonade","Bottle Water","Classic Balloon Décor",
+      "Backdrop (Happy Birthday)","Party Welcome Sign"
     ]
   },
   {
-    id:3, name:"PACKAGE 3", title:"🌟 Luxury 🌟", base:1399, orig:1793, perKid:50,
+    id:3, name:"PACKAGE 3", title:"🌟 Luxury 🌟", base:1399, orig:1793, perKid:35,
     cssvar:"var(--p3)", badge:"BEST VALUE",
     features:[
-      "10 kids","Adults","2Hr Private Party Room & Unlimited Playground Access",
+      "10 kids","10 Adults","2Hr Private Party Room & Unlimited Playground Access",
       "3 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid","Age Number Balloon",
-      "Paper Goods","Setup & Cleanup","Fruit Pouch for Each Kid","2L Lemonade","Adult Water",
-      "Dessert Table (Snack & Cup cakes)","Themed Paper Goods","Pinata","Balloon Décor",
-      "Backdrop (Party Theme Options)","Themed Setup (10 Party Theme Options)",
-      "Premium Themed Balloon Décor","Themed Balloon Garland","Return Pass for Each Kid"
+      "Themed Tableware","Setup & Cleanup","Fruit Pouch for Each Kid","2L Lemonade","Bottle Water",
+      "Premium Themed Balloon Décor","Backdrop (Party Theme Options)","Party Welcome Sign",
+      "Dessert Table (Snack & Cup Cakes)","Themed Balloon Garland","Pinata","Return Pass for Each Kid"
     ]
   },
   {
-    id:4, name:"PACKAGE 4", title:"👑 VIP 👑", base:1799, orig:1999, perKid:50,
+    id:4, name:"PACKAGE 4", title:"👑 VIP 👑", base:1799, orig:1999, perKid:35,
     cssvar:"var(--p4)", badge:"VIP EXPERIENCE",
     features:[
-      "10 kids","Adults","2Hr Private Party Room & Unlimited Playground Access",
+      "10 kids","10 Adults","2Hr Private Party Room & Unlimited Playground Access",
       "3 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid","Age Number Balloon",
-      "Paper Goods","Setup & Cleanup","Fruit Pouch for Each Kid","2L Lemonade","Adult Water",
-      "Dessert Table (Snack & Cup cakes)","Themed Paper Goods","Pinata","Balloon Décor",
-      "Backdrop (Party Theme Options)","Themed Setup (10 Party Theme Options)",
-      "Premium Themed Balloon Décor","Themed Balloon Garland","Return Pass for Each Kid",
-      "Premium Balloon Installation (Fireworks / Cake / Garland / Flower)",
-      "Special Gift for Birthday Kids","Photography Assistance"
+      "Themed Tableware","Setup & Cleanup","Fruit Pouch for Each Kid","2L Lemonade","Bottle Water",
+      "Premium Themed Balloon Décor","Backdrop (Party Theme Options)","Party Welcome Sign",
+      "Dessert Table (Snack & Cup Cakes)","Themed Balloon Garland","Pinata","Return Pass for Each Kid",
+      "Balloon Cake","Balloon Flower","Balloon Fireworks",
+      "Special Gift for Birthday Kid","Photography Assistance"
     ]
   }
 ];
@@ -317,12 +329,46 @@ const THEMES = [
   {e:"🦁",n:"Safari"},{e:"🌊",n:"Under the Sea"},{e:"🚀",n:"Space"},{e:"🎀",n:"Cocomelon"}
 ];
 
+// Add-on extras (from the EXTRA OPTIONS menu) — chosen by quantity on step 3.
+const OPTIONS = [
+  { cat:"🎁 Gift Options", items:[
+    { id:"balloon_dog", n:"Balloon Dog", p:3 },
+    { id:"goodie_bags", n:"Goodie Bags", p:8 },
+    { id:"special_gift", n:"Special Gift for Birthday Kid", p:100 },
+  ]},
+  { cat:"🍕 Food & Drink Extras", items:[
+    { id:"juice_box", n:"Juice Box", p:3 },
+    { id:"milk_box", n:"Milk Box", p:3 },
+    { id:"fruit_pouch", n:"Fruit Pouch", p:3 },
+    { id:"yogurt_pouch", n:"Yogurt Pouch", p:3 },
+    { id:"pizza_cheese", n:'Pizza (Cheese 18")', p:30 },
+    { id:"veg_salad", n:"Vegetable Salad", p:30 },
+    { id:"fruit_salad", n:"Fruit Salad", p:30 },
+    { id:"coke_2l", n:"2L Coke", p:10 },
+    { id:"lemonade_2l", n:"2L Lemonade", p:10 },
+    { id:"themed_cake", n:"Themed Birthday Cake", p:200 },
+    { id:"sparkling_water", n:"Sparkling Water", p:3 },
+    { id:"bottled_water", n:"Bottled Water", p:3 },
+  ]},
+  { cat:"🎟️ Other Options", items:[
+    { id:"extra_adult", n:"One Additional Adult", p:10 },
+    { id:"grip_sock", n:"Waddle Grip Sock", p:3 },
+    { id:"outside_food_fee", n:"Outside Food Cleaning Fee", p:100 },
+  ]},
+];
+const OPTION_BY_ID = Object.fromEntries(OPTIONS.flatMap(c=>c.items).map(i=>[i.id, i]));
+
 const DEPOSIT = 500;
 const TAX_RATE = 0.08625; // 8.625% sales tax (applied to party total, not the deposit)
 
+// Backend (booking-request email service). Paste the ApiBaseUrl from
+// `sam deploy` here — see backend/README.md.
+const API_BASE = "https://7xgbes1yr7.execute-api.us-east-1.amazonaws.com/prod";
+let submitting = false; // guards against double-submit
+
 /* ---------------- State ---------------- */
-const state = { step:1, dateISO:null, time:null, kids:10, pkgId:null, theme:null, name:"", phone:"", email:"" };
-const STEPS = ["Date & Time","Package","Themes","Deposit"];
+const state = { step:1, dateISO:null, time:null, kids:10, pkgId:null, theme:null, options:{}, name:"", phone:"", email:"" };
+const STEPS = ["Date & Time","Package","Theme & Extras","Deposit"];
 let prevStep = 1;        // tracks step changes for scroll behavior
 let scrollNext = null;   // selector to reveal after a within-step selection
 
@@ -332,6 +378,27 @@ const fmt = n => "$" + Number(n).toLocaleString("en-US");
 const money = n => "$" + Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const pkgById = id => PACKAGES.find(p => p.id === id);
 function priceFor(pkg, kids){ return pkg.base + Math.max(0, kids - 10) * pkg.perKid; }
+function optionsTotal(){
+  return Object.entries(state.options).reduce((s,[id,q])=> s + (OPTION_BY_ID[id]?.p||0)*Number(q||0), 0);
+}
+function selectedOptions(){
+  return OPTIONS.flatMap(c=>c.items).filter(i=>(state.options[i.id]||0)>0)
+    .map(i=>({ ...i, q: state.options[i.id] }));
+}
+// Single source of truth for all party totals (package + extra kids + extras).
+function partyTotals(){
+  const pkg = pkgById(state.pkgId);
+  if (!pkg) return null;
+  const extra = Math.max(0, state.kids - 10);
+  const adults = 10 + extra;            // each extra kid includes 1 accompanying adult
+  const kidsExtra = extra * pkg.perKid;
+  const optionsSum = optionsTotal();
+  const subtotal = pkg.base + kidsExtra + optionsSum;
+  const tax = subtotal * TAX_RATE;
+  const saleTotal = subtotal + tax;
+  const balance = saleTotal - DEPOSIT;
+  return { pkg, extra, adults, kidsExtra, optionsSum, subtotal, tax, saleTotal, balance };
+}
 function contactValid(){
   return state.name.trim().length > 1
     && state.phone.replace(/\D/g,"").length >= 7
@@ -414,15 +481,15 @@ function step1(){
       <span class="count" id="kCount">${state.kids}</span>
       <button id="kPlus" ${state.kids>=25?"disabled":""}>+</button>
     </div>
-    <div class="kid-note">10 kids included in every package · max 25 · adults always included.
-      ${state.kids>10 ? `<br><b>${state.kids-10} extra kid${state.kids-10>1?"s":""}</b> — upcharge depends on package.` : ""}</div>
+    <div class="kid-note">10 kids + 10 adults included in every package · max 25 kids.
+      ${state.kids>10 ? `<br><b>${state.kids-10} extra kid${state.kids-10>1?"s":""}</b> — +$35 each (includes 1 adult per child).` : ""}</div>
   `;
 }
 
 function step2(){
   const cards = PACKAGES.map(pkg=>{
     const total = priceFor(pkg, state.kids);
-    const breakdown = `10 kids included · +${fmt(pkg.perKid)} per extra kid`;
+    const breakdown = `10 kids + 10 adults · +${fmt(pkg.perKid)} per extra kid`;
     const orig = pkg.orig ? `<div class="orig">Original ${fmt(pkg.orig)}</div>` : `<div class="orig" style="visibility:hidden">.</div>`;
     return `
       <div class="pkg ${state.pkgId===pkg.id?"sel":""}" style="--pc:${pkg.cssvar}" data-pkg="${pkg.id}" tabindex="0" role="button" aria-pressed="${state.pkgId===pkg.id}">
@@ -453,27 +520,39 @@ function step3(){
       <span class="tname">${t.n}</span>
       <span class="tick">${state.theme===t.n?"✓ Selected":""}</span>
     </button>`).join("");
+  const opts = OPTIONS.map(cat=>`
+    <div class="opt-cat-title">${cat.cat}</div>
+    <div class="opt-list">${cat.items.map(i=>{
+      const q = state.options[i.id]||0;
+      return `<div class="opt-row ${q>0?"on":""}">
+        <div class="opt-info"><span class="opt-name">${i.n}</span><span class="opt-price">${fmt(i.p)} each</span></div>
+        <div class="opt-stepper" data-opt="${i.id}">
+          <button class="opt-minus" ${q<=0?"disabled":""} aria-label="remove one ${i.n}">−</button>
+          <span class="opt-q">${q}</span>
+          <button class="opt-plus" aria-label="add one ${i.n}">+</button>
+        </div>
+      </div>`;
+    }).join("")}</div>`).join("");
   return `
     <h2>Customize your party 🎨</h2>
-    <p class="sub">Pick one theme. This step is optional.</p>
+    <p class="sub">Pick one theme, then add any extras you'd like. Both optional.</p>
     <div class="theme-note">⚠️ Sample themes shown — your final theme list will replace these.</div>
-    <div class="themes">${cards}</div>`;
+    <div class="themes">${cards}</div>
+    <div class="field-label" style="margin-top:24px">✨ Add-on extras <span style="font-weight:400;color:var(--muted);font-size:13px">(optional — choose any quantity)</span></div>
+    ${opts}`;
 }
 
 function step4(){
-  const pkg = pkgById(state.pkgId);
-  const subtotal = priceFor(pkg, state.kids);
-  const extra = Math.max(0, state.kids-10);
-  const tax = subtotal * TAX_RATE;
-  const saleTotal = subtotal + tax;
-  const balance = saleTotal - DEPOSIT;
+  const t = partyTotals();
+  const pkg = t.pkg;
+  const sel = selectedOptions();
   return `
     <h2>Review & deposit</h2>
-    <p class="sub">Confirm the details, then pay the ${fmt(DEPOSIT)} deposit to lock in your date.</p>
+    <p class="sub">Confirm the details, then submit to reserve your date with a ${fmt(DEPOSIT)} Zelle deposit.</p>
     <div class="review-grid">
       <div class="rev"><div class="k">Date</div><div class="v">${prettyDate(state.dateISO)}</div></div>
       <div class="rev"><div class="k">Time</div><div class="v">${state.time}</div></div>
-      <div class="rev"><div class="k">Kids</div><div class="v">${state.kids} kids + adults</div></div>
+      <div class="rev"><div class="k">Guests</div><div class="v">${state.kids} kids + ${t.adults} adults</div></div>
       <div class="rev"><div class="k">Package</div><div class="v">${pkg.title.replace(/[⭐💖🌟👑]/g,"").trim()}</div></div>
       <div class="rev" style="grid-column:1/-1"><div class="k">Theme</div>
         <div class="v">${state.theme || "—"}</div></div>
@@ -484,60 +563,60 @@ function step4(){
     <input class="tin" id="fEmail" type="email" placeholder="Email address" value="${state.email}" autocomplete="email" />
     <div class="kid-note">We'll send your reservation confirmation to this email.</div>
     <div class="price-box">
-      <div class="sum-row"><span class="k">${pkg.name} base (10 kids)</span><span class="v">${money(pkg.base)}</span></div>
-      ${extra>0?`<div class="sum-row"><span class="k">${extra} extra kid${extra>1?"s":""} × ${fmt(pkg.perKid)}</span><span class="v">${money(extra*pkg.perKid)}</span></div>`:""}
+      <div class="sum-row"><span class="k">${pkg.name} base (10 kids + 10 adults)</span><span class="v">${money(pkg.base)}</span></div>
+      ${t.extra>0?`<div class="sum-row"><span class="k">${t.extra} extra kid${t.extra>1?"s":""} × ${fmt(pkg.perKid)} (incl. 1 adult)</span><span class="v">${money(t.kidsExtra)}</span></div>`:""}
+      ${sel.map(o=>`<div class="sum-row"><span class="k">${o.q} × ${o.n}</span><span class="v">${money(o.q*o.p)}</span></div>`).join("")}
       <div class="divider"></div>
-      <div class="sum-row"><span class="k">Subtotal</span><span class="v">${money(subtotal)}</span></div>
-      <div class="sum-row"><span class="k">Tax (8.625%)</span><span class="v">${money(tax)}</span></div>
-      <div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(saleTotal)}</span></div>
-      <div class="sum-row deposit-line"><span class="k">Deposit due now (no tax)</span><span class="v">${money(DEPOSIT)}</span></div>
-      <div class="sum-row"><span class="k">Balance due at venue</span><span class="v">${money(balance)}</span></div>
+      <div class="sum-row"><span class="k">Subtotal</span><span class="v">${money(t.subtotal)}</span></div>
+      <div class="sum-row"><span class="k">Tax (8.625%)</span><span class="v">${money(t.tax)}</span></div>
+      <div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(t.saleTotal)}</span></div>
+      <div class="sum-row deposit-line"><span class="k">Deposit to confirm (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>
+      <div class="sum-row"><span class="k">Balance due at venue</span><span class="v">${money(t.balance)}</span></div>
     </div>
-    <p class="small-note">Clicking “Pay deposit” simulates a successful payment for this mock.
-      A real Square payment link will be wired in here.</p>`;
+    <p class="small-note">No card needed now — submit your request and we'll email you a Zelle QR for the ${fmt(DEPOSIT)} deposit to lock in your date.</p>`;
 }
 
 function step5(){
   const pkg = pkgById(state.pkgId);
-  const subtotal = priceFor(pkg, state.kids);
-  const tax = subtotal * TAX_RATE;
-  const saleTotal = subtotal + tax;
-  const balance = saleTotal - DEPOSIT;
+  if (!pkg){
+    // Edge render with no selections — generic thanks.
+    return `
+    <div class="confirm-hero">
+      <div class="big">🎉🐤🎈</div>
+      <h2>Request received!</h2>
+      <p class="sub">Thanks! We'll email you a Zelle request for the ${fmt(DEPOSIT)} deposit shortly to lock in your date.</p>
+    </div>`;
+  }
+  const t = partyTotals();
   const cleanTitle = pkg.title.replace(/[⭐💖🌟👑]/g,"").trim();
-  const email =
-`To:      info@waddlewaddleny.com
-Subject: 🎉 New Party Reservation — ${prettyDate(state.dateISO)}, ${state.time}
+  const firstName = state.name ? state.name.split(" ")[0] : "";
+  const sel = selectedOptions();
+  const extrasRecap = sel.length ? "\n\nExtras:\n" + sel.map(o=>`  ${o.q} × ${o.n}  ${money(o.q*o.p)}`).join("\n") : "";
+  const recap =
+`Date:             ${prettyDate(state.dateISO)}
+Time:             ${state.time}
+Guests:           ${state.kids} kids + ${t.adults} adults
+Package:          ${cleanTitle} (${pkg.name})
+Theme:            ${state.theme || "None selected"}${extrasRecap}
 
-A new birthday party deposit has been received.
-
-  Date:            ${prettyDate(state.dateISO)}
-  Time:            ${state.time}
-  Guests:          ${state.kids} kids + adults
-  Package:         ${cleanTitle} (${pkg.name})
-  Theme:           ${state.theme || "None selected"}
-
-  Booked by:       ${state.name}
-  Phone:           ${state.phone}
-  Email:           ${state.email}
-
-  Subtotal:        ${money(subtotal)}
-  Tax (8.625%):    ${money(tax)}
-  Sale total:      ${money(saleTotal)}
-  Deposit paid:    ${money(DEPOSIT)} (no tax)
-  Balance due:     ${money(balance)} (at venue)
-
-— Sent automatically by the Waddle Waddle NY booking page`;
+Subtotal:         ${money(t.subtotal)}
+Tax (8.625%):     ${money(t.tax)}
+Sale total:       ${money(t.saleTotal)}
+Zelle deposit:    ${money(DEPOSIT)} (to confirm)
+Balance at venue: ${money(t.balance)}`;
   return `
     <div class="confirm-hero">
       <div class="big">🎉🐤🎈</div>
-      <h2>Reservation confirmed!</h2>
-      <p class="sub">Your ${fmt(DEPOSIT)} deposit was received and your date is locked in. A confirmation is on its way to ${state.email || "your email"}.</p>
+      <h2>Request received!</h2>
+      <p class="sub">Thanks ${firstName}! We'll email a Zelle request for the ${fmt(DEPOSIT)} deposit to ${state.email || "your email"} within 24 hours. Once it's paid, your date is locked in.</p>
     </div>
     <div class="email-card">
-      <div class="ehead">📧 Confirmation email that will be sent to the venue</div>
-      <pre>${email.replace(/</g,"&lt;")}</pre>
+      <div class="ehead">📋 Your request</div>
+      <pre>${recap.replace(/</g,"&lt;")}</pre>
     </div>
-    <p class="small-note">In the live version this email is delivered automatically after a real Square payment.</p>`;
+    ${state.emailedCustomer === false
+      ? `<p class="small-note">We got your request, but couldn't email a confirmation — please call (516) 243-9397 so we don't miss your booking.</p>`
+      : `<p class="small-note">Check your inbox (and spam, just in case) for our confirmation. Questions? Call (516) 243-9397.</p>`}`;
 }
 
 /* ---------------- Render: summary ---------------- */
@@ -551,28 +630,25 @@ function renderSummary(){
   let body = "";
   body += row("Date", state.dateISO ? prettyDate(state.dateISO) : "Not selected", !state.dateISO);
   body += row("Time", state.time || "Not selected", !state.time);
-  body += row("Kids", state.kids + " kids");
+  body += row("Guests", state.kids + " kids + " + (10 + Math.max(0, state.kids-10)) + " adults");
   body += row("Package", pkg ? pkg.title.replace(/[⭐💖🌟👑]/g,"").trim() : "Not selected", !pkg);
   if (state.theme) body += row("Theme", state.theme);
 
   // Pricing (incl. deposit) only appears once a package is selected.
   let compact = ""; // condensed total shown on mobile, where the full summary is hidden
   if (pkg){
-    const extra = Math.max(0, state.kids-10);
-    const subtotal = priceFor(pkg, state.kids);
-    const tax = subtotal * TAX_RATE;
-    const saleTotal = subtotal + tax;
-    const balance = saleTotal - DEPOSIT;
+    const t = partyTotals();
     body += `<div class="divider"></div>`;
-    body += row("Package (10 kids)", money(pkg.base));
-    if (extra>0) body += row(`Extra kids (${extra} × ${fmt(pkg.perKid)})`, money(extra*pkg.perKid));
-    body += row("Subtotal", money(subtotal));
-    body += row("Tax (8.625%)", money(tax));
-    body += `<div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(saleTotal)}</span></div>`;
-    body += `<div class="sum-row deposit-line"><span class="k">Deposit due now</span><span class="v">${money(DEPOSIT)}</span></div>`;
-    body += row("Balance due", money(balance));
-    compact = `<div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(saleTotal)}</span></div>
-      <div class="sum-row deposit-line"><span class="k">Deposit due now</span><span class="v">${money(DEPOSIT)}</span></div>`;
+    body += row("Package (10 kids + 10 adults)", money(pkg.base));
+    if (t.extra>0) body += row(`Extra kids (${t.extra} × ${fmt(pkg.perKid)})`, money(t.kidsExtra));
+    if (t.optionsSum>0) body += row(`Add-on extras (${selectedOptions().length})`, money(t.optionsSum));
+    body += row("Subtotal", money(t.subtotal));
+    body += row("Tax (8.625%)", money(t.tax));
+    body += `<div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(t.saleTotal)}</span></div>`;
+    body += `<div class="sum-row deposit-line"><span class="k">Deposit (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>`;
+    body += row("Balance due", money(t.balance));
+    compact = `<div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(t.saleTotal)}</span></div>
+      <div class="sum-row deposit-line"><span class="k">Deposit (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>`;
   } else {
     body += `<div class="divider"></div>`;
     body += `<div class="sum-row"><span class="k sum-empty">Pricing shows after you pick a package</span><span class="v"></span></div>`;
@@ -615,7 +691,7 @@ function ctaConfig(){
       return { label:"Continue to review", disabled:false, action:()=>{ state.step=4; render(); } };
     case 4:{
       const ok = contactValid();
-      return { label:`Pay ${fmt(DEPOSIT)} deposit`, disabled:!ok, action:()=>{ if(ok){ state.step=5; render(); } } };
+      return { label:"Reserve my date", disabled:!ok, action:()=>{ if(ok) submitBooking(); } };
     }
     default:
       return { label:"Start a new booking", disabled:false, action:resetBooking };
@@ -623,9 +699,38 @@ function ctaConfig(){
 }
 
 function resetBooking(){
-  state.step=1; state.dateISO=null; state.time=null; state.kids=10; state.pkgId=null; state.theme=null;
+  state.step=1; state.dateISO=null; state.time=null; state.kids=10; state.pkgId=null; state.theme=null; state.options={};
   state.name=""; state.phone=""; state.email="";
   render();
+}
+
+// Submit the booking to the backend, which emails the venue + customer.
+// No redirect — on success we go straight to the step-5 confirmation.
+async function submitBooking(){
+  if (submitting) return;
+  submitting = true;
+  const btn = $("#ctaBtn");
+  if (btn){ btn.disabled = true; btn.textContent = "Sending your request…"; }
+  try {
+    const res = await fetch(API_BASE + "/booking-request", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        dateISO: state.dateISO, time: state.time, kids: state.kids,
+        pkgId: state.pkgId, theme: state.theme, options: state.options,
+        name: state.name.trim(), phone: state.phone.trim(), email: state.email.trim()
+      })
+    });
+    if (!res.ok) throw new Error("request " + res.status);
+    const data = await res.json().catch(()=>({}));
+    state.emailedCustomer = data.emailedCustomer !== false;
+    state.step = 5; render();
+  } catch (err){
+    if (btn){ btn.disabled = false; btn.textContent = "Reserve my date"; }
+    alert("Sorry — we couldn't send your request. Please try again, or call us at (516) 243-9397.");
+  } finally {
+    submitting = false;
+  }
 }
 
 /* ---------------- Wiring ---------------- */
@@ -663,6 +768,22 @@ function wirePanel(){
         state.theme = (state.theme===n) ? null : n; // single-select, click again to clear
         scrollNext = "#summary"; render();
       };
+    });
+    document.querySelectorAll(".opt-stepper").forEach(st=>{
+      const id = st.dataset.opt;
+      const qEl = st.querySelector(".opt-q");
+      const minus = st.querySelector(".opt-minus");
+      const rowEl = st.closest(".opt-row");
+      const set = q=>{
+        q = Math.max(0, Math.min(99, q));
+        if (q===0) delete state.options[id]; else state.options[id] = q;
+        qEl.textContent = q;
+        minus.disabled = q<=0;
+        rowEl.classList.toggle("on", q>0);
+        renderSummary(); // live totals without re-rendering the long options list
+      };
+      st.querySelector(".opt-plus").onclick = ()=> set((state.options[id]||0)+1);
+      minus.onclick = ()=> set((state.options[id]||0)-1);
     });
   }
   if (state.step===4){
