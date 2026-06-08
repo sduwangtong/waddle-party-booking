@@ -438,6 +438,23 @@ function renderPanel(){
   wirePanel();
 }
 
+// Just the time-slot markup — refreshed on date change without rebuilding the
+// date <input> (which would close the native picker mid-interaction).
+function slotsMarkup(){
+  if (!state.dateISO) return `<p class="hint">Pick a date to see available time slots.</p>`;
+  const slots = slotsFor(state.dateISO);
+  const kind = isWeekend(state.dateISO) ? "Weekend" : "Weekday";
+  return `<p class="hint" style="margin-top:0">${kind} — ${slots.length} slot${slots.length>1?"s":""} available</p>
+    <div class="slots">` +
+    slots.map(s=>`<button class="slot ${state.time===s?"sel":""}" data-slot="${s}">${s}</button>`).join("") +
+    `</div>`;
+}
+function wireSlots(){
+  document.querySelectorAll(".slot").forEach(b=>{
+    b.onclick = ()=>{ state.time = b.dataset.slot; scrollNext = "#kidsField"; render(); };
+  });
+}
+
 function step1(){
   // build one week of day chips from today
   const today = new Date(); today.setHours(12,0,0,0);
@@ -452,18 +469,6 @@ function step1(){
   }
   const minISO = toISO(today);
 
-  let slotsHtml;
-  if (!state.dateISO){
-    slotsHtml = `<p class="hint">Pick a date to see available time slots.</p>`;
-  } else {
-    const slots = slotsFor(state.dateISO);
-    const kind = isWeekend(state.dateISO) ? "Weekend" : "Weekday";
-    slotsHtml = `<p class="hint" style="margin-top:0">${kind} — ${slots.length} slot${slots.length>1?"s":""} available</p>
-      <div class="slots">` +
-      slots.map(s=>`<button class="slot ${state.time===s?"sel":""}" data-slot="${s}">${s}</button>`).join("") +
-      `</div>`;
-  }
-
   return `
     <h2>Select a date & time</h2>
     <p class="sub">Choose when you'd like to celebrate, then how many kids are coming.</p>
@@ -473,7 +478,7 @@ function step1(){
     <div class="chips" style="margin-top:12px">${chips}</div>
 
     <div class="field-label" id="sessionTimes">⏰ Session time <span style="font-weight:400;color:var(--muted);font-size:13px">(2-hour private room)</span></div>
-    ${slotsHtml}
+    <div id="slotsWrap">${slotsMarkup()}</div>
 
     <div class="field-label" id="kidsField">🧒 Number of kids</div>
     <div class="stepper">
@@ -739,9 +744,13 @@ async function submitBooking(){
 function wirePanel(){
   if (state.step===1){
     $("#dateInput").onchange = e=>{
+      // Update only the slots below — a full render() would replace the date
+      // <input> and tear down the open native picker (the "auto-today / snap-shut" bug).
       state.dateISO = e.target.value || null;
       if (state.dateISO && !slotsFor(state.dateISO).includes(state.time)) state.time=null;
-      scrollNext = "#sessionTimes"; render();
+      $("#slotsWrap").innerHTML = slotsMarkup();
+      wireSlots();
+      renderSummary();
     };
     document.querySelectorAll(".chip").forEach(c=>{
       c.onclick = ()=>{
@@ -750,9 +759,7 @@ function wirePanel(){
         scrollNext = "#sessionTimes"; render();
       };
     });
-    document.querySelectorAll(".slot").forEach(b=>{
-      b.onclick = ()=>{ state.time = b.dataset.slot; scrollNext = "#kidsField"; render(); };
-    });
+    wireSlots();
     if ($("#kMinus")) $("#kMinus").onclick = ()=>{ if(state.kids>10){state.kids--; render();} };
     if ($("#kPlus")) $("#kPlus").onclick = ()=>{ if(state.kids<25){state.kids++; render();} };
   }
