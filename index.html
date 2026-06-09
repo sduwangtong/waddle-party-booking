@@ -530,14 +530,6 @@ function step1(){
     </div>
     <div class="kid-note">10 kids + 10 adults included in every package · max 25 kids.
       ${state.kids>10 ? `<br><b>${state.kids-10} extra kid${state.kids-10>1?"s":""}</b> — +$35 each (includes 1 adult per child).` : ""}</div>
-
-    <div class="pkg-notes">
-      <div class="pn-title">🎈 Party Package Notes</div>
-      <div class="pn-row">Additional guests <b>$35 / child</b> <span>(includes 1 accompanying adult)</span></div>
-      <div class="pn-row">🍕 11th–15th additional guests: <b>+1 Pizza · +1 × 2L Lemonade</b></div>
-      <div class="pn-row">🍕 16th–20th additional guests: <b>+2 Pizzas · +2 × 2L Lemonades</b></div>
-      <div class="pn-row">🍕 21st–25th additional guests: <b>+3 Pizzas · +3 × 2L Lemonades</b></div>
-    </div>
   `;
 }
 
@@ -592,6 +584,13 @@ function step3(){
     <h2>Customize your party 🎨</h2>
     <p class="sub">Pick one theme, then add any extras you'd like. Both optional.</p>
     <div class="themes">${cards}</div>
+    <div class="pkg-notes">
+      <div class="pn-title">🎈 Party Package Notes</div>
+      <div class="pn-row">Additional guests <b>$35 / child</b> <span>(includes 1 accompanying adult)</span></div>
+      <div class="pn-row">🍕 11th–15th additional guests: <b>+1 Pizza · +1 × 2L Lemonade</b></div>
+      <div class="pn-row">🍕 16th–20th additional guests: <b>+2 Pizzas · +2 × 2L Lemonades</b></div>
+      <div class="pn-row">🍕 21st–25th additional guests: <b>+3 Pizzas · +3 × 2L Lemonades</b></div>
+    </div>
     <div class="field-label" style="margin-top:24px">✨ Add-on extras <span style="font-weight:400;color:var(--muted);font-size:13px">(optional — choose any quantity)</span></div>
     ${opts}`;
 }
@@ -654,7 +653,7 @@ function step4(){
       <div class="sum-row"><span class="k">Balance due at venue</span><span class="v">${money(t.balance)}</span></div>
     </div>
     <p class="small-note">No card needed now — submit your request and we'll email you a Zelle QR for the ${fmt(DEPOSIT)} deposit to lock in your date.</p>
-    <div class="policy-note">⚠️ Deposit policy: once your booking is within ${LEAD_DAYS} days of the party date, the ${fmt(DEPOSIT)} deposit is non-refundable.</div>`;
+    <div class="policy-note">⚠️ ${fmt(DEPOSIT)} deposit refundable only if cancelled ${LEAD_DAYS}+ days before the party.</div>`;
 }
 
 function step5(){
