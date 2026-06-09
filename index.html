@@ -407,7 +407,6 @@ const $ = sel => document.querySelector(sel);
 const fmt = n => "$" + Number(n).toLocaleString("en-US");
 const money = n => "$" + Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const pkgById = id => PACKAGES.find(p => p.id === id);
-function priceFor(pkg, kids){ return pkg.base + Math.max(0, kids - 10) * pkg.perKid; }
 function optionsTotal(){
   return Object.entries(state.options).reduce((s,[id,q])=> s + (OPTION_BY_ID[id]?.p||0)*Number(q||0), 0);
 }
@@ -535,7 +534,6 @@ function step1(){
 
 function step2(){
   const cards = PACKAGES.map(pkg=>{
-    const total = priceFor(pkg, state.kids);
     const breakdown = `10 kids + 10 adults · +${fmt(pkg.perKid)} per extra kid`;
     const orig = pkg.orig ? `<div class="orig">Original ${fmt(pkg.orig)}</div>` : `<div class="orig" style="visibility:hidden">.</div>`;
     return `
@@ -546,7 +544,7 @@ function step2(){
           <div class="ptitle">${pkg.title}</div>
         </div>
         <div class="pbody">
-          <div class="price">${fmt(total)} <small>total</small></div>
+          <div class="price">${fmt(pkg.base)} <small>base</small></div>
           ${orig}
           <div class="breakdown">${breakdown}</div>
           <ul>${pkg.features.map(f=>`<li>${f}</li>`).join("")}</ul>
@@ -556,7 +554,7 @@ function step2(){
   }).join("");
   return `
     <h2>Choose your package</h2>
-    <p class="sub">Prices below already include your <b>${state.kids} kids</b>. Pick the experience you want.</p>
+    <p class="sub">Each package includes <b>10 kids + 10 adults</b>. Extra kids (+$35 each) are added at the final step.</p>
     <div class="pkgs">${cards}</div>`;
 }
 
