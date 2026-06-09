@@ -722,9 +722,10 @@ function renderSummary(){
   body += row("Package", pkg ? pkg.title.replace(/[⭐💖🌟👑]/g,"").trim() : "Not selected", !pkg);
   if (state.theme) body += row("Theme", state.theme);
 
-  // Pricing (incl. deposit) only appears once a package is selected.
+  // Until the final review/confirmation steps, the summary shows only the $500
+  // deposit; the full price breakdown appears on step 4+.
   let compact = ""; // condensed total shown on mobile, where the full summary is hidden
-  if (pkg){
+  if (state.step >= 4 && pkg){
     const t = partyTotals();
     body += `<div class="divider"></div>`;
     body += row("Package (10 kids + 10 adults)", money(pkg.base));
@@ -739,8 +740,11 @@ function renderSummary(){
     compact = `<div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(t.saleTotal)}</span></div>
       <div class="sum-row deposit-line"><span class="k">Deposit (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>`;
   } else {
+    // Earlier steps — show just the deposit to reserve; full price comes at review.
     body += `<div class="divider"></div>`;
-    body += `<div class="sum-row"><span class="k sum-empty">Pricing shows after you pick a package</span><span class="v"></span></div>`;
+    body += `<div class="sum-row deposit-line"><span class="k">Deposit to reserve (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>`;
+    body += `<div class="sum-row"><span class="k sum-empty">Full price shown at review</span><span class="v"></span></div>`;
+    compact = `<div class="sum-row deposit-line"><span class="k">Deposit to reserve (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>`;
   }
 
   // CTA
