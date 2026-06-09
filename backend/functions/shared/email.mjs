@@ -19,10 +19,18 @@ function summaryRows(b) {
     ['Date', prettyDate(b.dateISO)],
     ['Time', b.time],
     ['Guests', `${b.kids} kids + ${b.adults} adults`],
+    ['Birthday child', `${b.childName || '—'}${b.childAge ? ` (turning ${b.childAge})` : ''}`],
+    ['Gender', b.childGender || '—'],
     ['Package', `${b.pkgName} — ${b.pkgTitle}`],
     ['Theme', b.theme || '—'],
   ];
+  if (b.allergies) rows.push(['Allergies / dietary', b.allergies]);
+  if (b.notes) rows.push(['Notes', b.notes]);
   for (const o of (b.options || [])) rows.push([`${o.qty} × ${o.name}`, money(o.total)]);
+  if (b.discount > 0) {
+    rows.push(['Items total', money(b.gross)]);
+    rows.push([`Discount (${b.discountCode}, 10%)`, `−${money(b.discount)}`]);
+  }
   rows.push(
     ['Subtotal', money(b.subtotal)],
     ['Tax (8.625%)', money(b.tax)],

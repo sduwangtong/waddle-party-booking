@@ -14,6 +14,10 @@ export const PACKAGES = [
   { id: 4, name: 'PACKAGE 4', title: 'VIP',     base: 1799, perKid: 35 },
 ];
 
+// Discount codes — server-owned so the client can never invent a discount.
+// 10% off the pre-tax subtotal. MUST mirror DISCOUNT_CODES in index.html.
+export const DISCOUNT_CODES = { DAYCARE122: 0.10, IMMEMBER: 0.10 };
+
 // Add-on extras — MUST mirror OPTIONS in index.html.
 export const OPTIONS = [
   { id: 'balloon_dog', n: 'Balloon Dog', p: 3 },
@@ -54,6 +58,15 @@ export function validateAndPrice(input) {
   const time = String(input?.time ?? '').trim();
   const theme = input?.theme ? String(input.theme).trim().slice(0, 60) : null;
 
+  // Birthday-child details (collected at checkout).
+  const childName = String(input?.childName ?? '').trim().slice(0, 80);
+  const childAgeNum = Number(input?.childAge);
+  const childAge = Number.isInteger(childAgeNum) && childAgeNum >= 1 && childAgeNum <= 17 ? childAgeNum : null;
+  const childGender = String(input?.childGender ?? '').trim().slice(0, 30);
+  const allergies = String(input?.allergies ?? '').trim().slice(0, 300);
+  const notes = String(input?.notes ?? '').trim().slice(0, 800);
+  const discCode = String(input?.discountCode ?? '').trim().toUpperCase();
+
   if (!pkg) throw new Error('Invalid package');
   if (!Number.isInteger(kids) || kids < MIN_KIDS || kids > MAX_KIDS) throw new Error('Invalid kids count');
   if (!ISO_DATE.test(dateISO)) throw new Error('Invalid date');
@@ -61,6 +74,9 @@ export function validateAndPrice(input) {
   if (name.length < 2 || name.length > 80) throw new Error('Invalid name');
   if (phone.replace(/\D/g, '').length < 7) throw new Error('Invalid phone');
   if (!EMAIL.test(email) || email.length > 120) throw new Error('Invalid email');
+  // Birthday-child fields are best-effort here — the booking form already requires them,
+  // and keeping the API lenient lets it accept older clients during a deploy (childAge is
+  // normalized to null when missing/out of range; the number balloon is then just unset).
 
   // Add-on extras — server owns the catalog + prices; ignore unknown ids.
   const rawOptions = (input?.options && typeof input.options === 'object') ? input.options : {};
@@ -80,7 +96,11 @@ export function validateAndPrice(input) {
   const extra = Math.max(0, kids - MIN_KIDS);
   const adults = 10 + extra;                  // each extra kid includes 1 accompanying adult
   const kidsExtra = extra * pkg.perKid;
-  const subtotal = round2(pkg.base + kidsExtra + optionsSum);
+  const gross = round2(pkg.base + kidsExtra + optionsSum);   // pre-discount, pre-tax
+  const discountRate = DISCOUNT_CODES[discCode] || 0;        // unknown codes silently apply 0%
+  const discountCode = discountRate > 0 ? discCode : null;
+  const discount = round2(gross * discountRate);
+  const subtotal = round2(gross - discount);                 // 10% off applies before tax
   const tax = round2(subtotal * TAX_RATE);
   const saleTotal = round2(subtotal + tax);
   const balance = round2(saleTotal - DEPOSIT);
@@ -88,8 +108,10 @@ export function validateAndPrice(input) {
   return {
     pkgId: pkg.id, pkgName: pkg.name, pkgTitle: pkg.title,
     kids, extra, adults, dateISO, time, theme,
+    childName, childAge, childGender, allergies, notes,
     name, phone, email,
     options: selected, optionsSum,
+    gross, discountCode, discountRate, discount,
     subtotal, tax, saleTotal,
     deposit: DEPOSIT, balance,
   };
