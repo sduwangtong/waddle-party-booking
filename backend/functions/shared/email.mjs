@@ -13,6 +13,7 @@ const VENUE_ADDR = '120 Voice Rd, Carle Place, NY 11514 · (516) 243-9397';
 const money = n => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const prettyDate = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 const firstName = full => full.split(' ')[0];
+const refundLine = b => `Your ${money(b.deposit)} deposit is refundable only if you cancel at least 14 days before the party date.`;
 
 function summaryRows(b) {
   const rows = [
@@ -74,8 +75,9 @@ export async function sendVenueAlert(b) {
       <div style="background:#F4F1FB;border-radius:14px;padding:18px 20px;">${htmlTable(b)}</div>
       <p style="margin:16px 0 4px;font-weight:600;">Contact</p>
       <p style="margin:0;color:#2c2c3a;">${b.name}<br>${b.phone}<br>${b.email}</p>
+      <p style="color:#9a3b58;font-size:12px;margin:14px 0 0;">Cancellation policy shown to customer: ${refundLine(b)}</p>
     </div>`.trim();
-  const text = `New party request\n\n${firstName(b.name)} was emailed the Zelle QR for the ${money(b.deposit)} deposit. Reply to follow up.\n\n${textSummary(b)}\n\nContact:\n  ${b.name}\n  ${b.phone}\n  ${b.email}`;
+  const text = `New party request\n\n${firstName(b.name)} was emailed the Zelle QR for the ${money(b.deposit)} deposit. Reply to follow up.\n\n${textSummary(b)}\n\nContact:\n  ${b.name}\n  ${b.phone}\n  ${b.email}\n\nCancellation policy shown to customer: ${refundLine(b)}`;
   await send({
     to: VENUE,
     replyTo: b.email,
@@ -100,9 +102,10 @@ export async function sendCustomerConfirmation(b) {
         <img src="${QR_URL}" alt="Zelle QR code — pay Waddle Waddle Inc." width="240" style="width:240px;max-width:80%;border:1px solid #eee;border-radius:14px;" />
       </div>
       <p style="color:#6b6b7b;font-size:14px;margin:18px 0 4px;">The remaining balance of <b>${money(b.balance)}</b> is due at the venue. Questions? Just reply to this email.</p>
+      <p style="color:#9a3b58;font-size:13px;margin:14px 0 0;background:#FDEEF2;border:1px solid #F4C4D2;border-radius:10px;padding:10px 14px;">⚠️ Cancellation policy: ${refundLine(b)}</p>
       <p style="color:#9a9aa8;font-size:13px;margin:16px 0 0;">${VENUE_ADDR}</p>
     </div>`.trim();
-  const text = `We got your party request, ${firstName(b.name)}!\n\nPay the ${money(b.deposit)} deposit to lock in your date. Once received, your reservation is confirmed.\n\n${textSummary(b)}\n\nPay with Zelle: open your bank app, choose Zelle, and pay ${money(b.deposit)} to Waddle Waddle Inc.\nQR code: ${QR_URL}\nThen reply to this email.\n\nRemaining balance of ${money(b.balance)} is due at the venue.\n\n${VENUE_ADDR}`;
+  const text = `We got your party request, ${firstName(b.name)}!\n\nPay the ${money(b.deposit)} deposit to lock in your date. Once received, your reservation is confirmed.\n\n${textSummary(b)}\n\nPay with Zelle: open your bank app, choose Zelle, and pay ${money(b.deposit)} to Waddle Waddle Inc.\nQR code: ${QR_URL}\nThen reply to this email.\n\nRemaining balance of ${money(b.balance)} is due at the venue.\n\nCancellation policy: ${refundLine(b)}\n\n${VENUE_ADDR}`;
   await send({
     to: b.email,
     cc: VENUE, // copy the venue on the exact email the customer receives
