@@ -5,7 +5,7 @@ A single-page birthday party-room booking flow for **Waddle Waddle NY** (120 Voi
 One self-contained `index.html` — no build step, no dependencies. Works on GitHub Pages or embedded in a Square page.
 
 ## Flow
-1. **Date · Time · Kids** — pick a date (weekend vs. weekday time slots) and number of kids (10–25).
+1. **Date · Time · Kids** — pick a date (weekend vs. weekday time slots) and number of kids (10–30).
 2. **Package** — Classic / Premium / Luxury / VIP, priced live (+$40 or +$50 per extra kid over 10).
 3. **Theme** — choose a party theme.
 4. **Review & Deposit** — enter name / phone / email, see the price breakdown (tax 8.625%, $500 deposit), pay.

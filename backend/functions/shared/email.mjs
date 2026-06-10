@@ -91,7 +91,7 @@ export async function sendCustomerConfirmation(b) {
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#2c2c3a;">
       <h2 style="margin:0 0 4px;">🐤 We got your party request, ${firstName(b.name)}!</h2>
-      <p style="color:#6b6b7b;margin:0 0 20px;">Pay the <b>${money(b.deposit)} deposit</b> below to lock in your date. Once it's received, your reservation is confirmed.</p>
+      <p style="color:#6b6b7b;margin:0 0 20px;">Pay the <b>${money(b.deposit)} deposit</b> below to lock in your date. Your time slot is <b>locked in only after the deposit is received</b> — until then it stays open to other bookings.</p>
       <div style="background:#F4F1FB;border-radius:14px;padding:18px 20px;">
         <p style="margin:0 0 12px;font-weight:600;">Your request</p>
         ${htmlTable(b)}
@@ -105,7 +105,7 @@ export async function sendCustomerConfirmation(b) {
       <p style="color:#9a3b58;font-size:13px;margin:14px 0 0;background:#FDEEF2;border:1px solid #F4C4D2;border-radius:10px;padding:10px 14px;">⚠️ Cancellation policy: ${refundLine(b)}</p>
       <p style="color:#9a9aa8;font-size:13px;margin:16px 0 0;">${VENUE_ADDR}</p>
     </div>`.trim();
-  const text = `We got your party request, ${firstName(b.name)}!\n\nPay the ${money(b.deposit)} deposit to lock in your date. Once received, your reservation is confirmed.\n\n${textSummary(b)}\n\nPay with Zelle: open your bank app, choose Zelle, and pay ${money(b.deposit)} to Waddle Waddle Inc.\nQR code: ${QR_URL}\nThen reply to this email.\n\nRemaining balance of ${money(b.balance)} is due at the venue.\n\nCancellation policy: ${refundLine(b)}\n\n${VENUE_ADDR}`;
+  const text = `We got your party request, ${firstName(b.name)}!\n\nPay the ${money(b.deposit)} deposit to lock in your date. Your time slot is locked in only after the deposit is received — until then it stays open to other bookings.\n\n${textSummary(b)}\n\nPay with Zelle: open your bank app, choose Zelle, and pay ${money(b.deposit)} to Waddle Waddle Inc.\nQR code: ${QR_URL}\nThen reply to this email.\n\nRemaining balance of ${money(b.balance)} is due at the venue.\n\nCancellation policy: ${refundLine(b)}\n\n${VENUE_ADDR}`;
   await send({
     to: b.email,
     cc: VENUE, // copy the venue on the exact email the customer receives

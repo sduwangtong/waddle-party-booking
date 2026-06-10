@@ -525,9 +525,9 @@ function step1(){
     <div class="stepper">
       <button id="kMinus" ${state.kids<=10?"disabled":""}>−</button>
       <span class="count" id="kCount">${state.kids}</span>
-      <button id="kPlus" ${state.kids>=25?"disabled":""}>+</button>
+      <button id="kPlus" ${state.kids>=30?"disabled":""}>+</button>
     </div>
-    <div class="kid-note">10 kids + 10 adults included in every package · max 25 kids.
+    <div class="kid-note">10 kids + 10 adults included in every package · max 30 kids.
       ${state.kids>10 ? `<br><b>${state.kids-10} extra kid${state.kids-10>1?"s":""}</b> — +$35 each (includes 1 adult per child).` : ""}</div>
   `;
 }
@@ -559,12 +559,17 @@ function step2(){
 }
 
 function step3(){
+  // Themes come with Package 3 & 4 only — Packages 1 & 2 use classic décor.
+  const themeLocked = state.pkgId !== null && state.pkgId <= 2;
   const cards = THEMES.map((t)=>`
     <button class="theme ${state.theme===t.n?"sel":""}" data-theme="${t.n}">
       <span class="emoji">${t.e}</span>
       <span class="tname">${t.n}</span>
       <span class="tick">${state.theme===t.n?"✓ Selected":""}</span>
     </button>`).join("");
+  const themeBlock = themeLocked
+    ? `<div class="theme-note">🎨 Party themes are available with <b>Package 3 (Luxury)</b> and <b>Package 4 (VIP)</b> — your package includes our classic décor. Want a themed party? Go back and upgrade your package.</div>`
+    : `<div class="themes">${cards}</div>`;
   const opts = OPTIONS.map(cat=>`
     <div class="opt-cat-title">${cat.cat}</div>
     <div class="opt-list">${cat.items.map(i=>{
@@ -580,8 +585,8 @@ function step3(){
     }).join("")}</div>`).join("");
   return `
     <h2>Customize your party 🎨</h2>
-    <p class="sub">Pick one theme, then add any extras you'd like. Both optional.</p>
-    <div class="themes">${cards}</div>
+    <p class="sub">${themeLocked ? "Add any extras you'd like — all optional." : "Pick one theme, then add any extras you'd like. Both optional."}</p>
+    ${themeBlock}
     <div class="pkg-notes">
       <div class="pn-title">🎈 Party Package Notes</div>
       <div class="pn-row">Additional guests <b>$35 / child</b> <span>(includes 1 accompanying adult)</span></div>
@@ -589,6 +594,8 @@ function step3(){
       <div class="pn-row">🍕 11th–15th guests: <b>1 Pizza + 1 × 2L Lemonade</b> <span>included</span></div>
       <div class="pn-row">🍕 16th–20th guests: <b>2 Pizzas + 2 × 2L Lemonades</b> <span>included</span></div>
       <div class="pn-row">🍕 21st–25th guests: <b>3 Pizzas + 3 × 2L Lemonades</b> <span>included</span></div>
+      <div class="pn-row">🍕 26th–30th guests: <b>4 Pizzas + 4 × 2L Lemonades</b> <span>included</span></div>
+      <div class="pn-row" style="margin-top:6px">🥡 Outside food: <b>light snacks only</b> <span>($100 cleaning fee applies)</span></div>
     </div>
     <div class="field-label" style="margin-top:24px">✨ Add-on extras <span style="font-weight:400;color:var(--muted);font-size:13px">(optional — choose any quantity)</span></div>
     ${opts}`;
@@ -652,7 +659,7 @@ function step4(){
       <div class="sum-row"><span class="k">Balance due at venue</span><span class="v">${money(t.balance)}</span></div>
     </div>
     <p class="small-note">No card needed now — submit your request and we'll email you a Zelle QR for the ${fmt(DEPOSIT)} deposit to lock in your date.</p>
-    <div class="policy-note">⚠️ ${fmt(DEPOSIT)} deposit refundable only if cancelled ${LEAD_DAYS}+ days before the party.</div>`;
+    <div class="policy-note">🔒 Your date &amp; time slot are <b>locked in only after the ${fmt(DEPOSIT)} deposit is received</b> — submitting this request does not hold the slot.<br>⚠️ ${fmt(DEPOSIT)} deposit refundable only if cancelled ${LEAD_DAYS}+ days before the party.</div>`;
 }
 
 function step5(){
@@ -694,7 +701,7 @@ Balance at venue: ${money(t.balance)}`;
     <div class="confirm-hero">
       <div class="big">🎉🐤🎈</div>
       <h2>Request received!</h2>
-      <p class="sub">Thanks ${firstName}! We'll email a Zelle request for the ${fmt(DEPOSIT)} deposit to ${state.email || "your email"} within 24 hours. Once it's paid, your date is locked in.</p>
+      <p class="sub">Thanks ${firstName}! We'll email a Zelle request for the ${fmt(DEPOSIT)} deposit to ${state.email || "your email"} within 24 hours. Your time slot is locked in <b>only after the deposit is received</b>.</p>
     </div>
     <div class="email-card">
       <div class="ehead">📋 Your request</div>
@@ -855,11 +862,11 @@ function wirePanel(){
     });
     wireSlots();
     if ($("#kMinus")) $("#kMinus").onclick = ()=>{ if(state.kids>10){state.kids--; render();} };
-    if ($("#kPlus")) $("#kPlus").onclick = ()=>{ if(state.kids<25){state.kids++; render();} };
+    if ($("#kPlus")) $("#kPlus").onclick = ()=>{ if(state.kids<30){state.kids++; render();} };
   }
   if (state.step===2){
     document.querySelectorAll(".pkg").forEach(c=>{
-      const choose = ()=>{ state.pkgId = +c.dataset.pkg; scrollNext = "#summary"; render(); };
+      const choose = ()=>{ state.pkgId = +c.dataset.pkg; if (state.pkgId <= 2) state.theme = null; scrollNext = "#summary"; render(); };
       c.onclick = choose;
       c.onkeydown = e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); choose(); } };
     });

@@ -5,7 +5,7 @@
 export const DEPOSIT = 500;            // deposit, untaxed, collected via Zelle
 export const TAX_RATE = 0.08625;       // 8.625% sales tax on the party total
 export const MIN_KIDS = 10;
-export const MAX_KIDS = 25;
+export const MAX_KIDS = 30;
 
 export const PACKAGES = [
   { id: 1, name: 'PACKAGE 1', title: 'Classic', base: 599,  perKid: 35 },
@@ -56,7 +56,8 @@ export function validateAndPrice(input) {
   const email = String(input?.email ?? '').trim().toLowerCase();
   const dateISO = String(input?.dateISO ?? '').trim();
   const time = String(input?.time ?? '').trim();
-  const theme = input?.theme ? String(input.theme).trim().slice(0, 60) : null;
+  // Themes come with Package 3 & 4 only — drop any theme sent for Package 1/2.
+  const theme = pkg && pkg.id >= 3 && input?.theme ? String(input.theme).trim().slice(0, 60) : null;
 
   // Birthday-child details (collected at checkout).
   const childName = String(input?.childName ?? '').trim().slice(0, 80);
