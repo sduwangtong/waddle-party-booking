@@ -1,12 +1,12 @@
-// Booking-request emails via SES. Both sent FROM info@waddlewaddleny.com
-// (domain-verified). The customer email includes the full order summary plus the
-// Zelle QR so they can pay the $500 deposit; the venue gets a copy to follow up.
+// Booking-confirmation emails via SES. Both sent FROM info@waddlewaddleny.com
+// (domain-verified). These go out AFTER the $500 deposit is paid via Stripe
+// (the webhook calls sendBookingEmails): the customer gets a paid receipt + the
+// balance due at the venue; the venue gets the confirmed booking with its IDs.
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
 const ses = new SESClient({});
 const SENDER = process.env.SES_SENDER_EMAIL || 'info@waddlewaddleny.com';
 const VENUE = process.env.VENUE_EMAIL || 'info@waddlewaddleny.com';
-const QR_URL = process.env.ZELLE_QR_URL || 'https://sduwangtong.github.io/waddle-party-booking/assets/zelle-qr.png';
 const FROM = `Waddle Waddle NY <${SENDER}>`;
 const VENUE_ADDR = '120 Voice Rd, Carle Place, NY 11514 · (516) 243-9397';
 
@@ -36,7 +36,7 @@ function summaryRows(b) {
     ['Subtotal', money(b.subtotal)],
     ['Tax (8.625%)', money(b.tax)],
     ['Sale total', money(b.saleTotal)],
-    ['Zelle deposit due', money(b.deposit)],
+    ['Deposit paid (Stripe)', money(b.deposit)],
     ['Remaining balance (at venue)', money(b.balance)],
   );
   return rows;
@@ -66,51 +66,62 @@ async function send({ to, cc, subject, html, text, replyTo }) {
   }));
 }
 
-// Internal alert to the venue. Reply-To = customer for easy follow-up.
+// Internal alert to the venue — the booking is confirmed and the deposit is paid.
+// Reply-To = customer for easy follow-up.
 export async function sendVenueAlert(b) {
+  const ids = `Booking ID: ${b.bookingId || '—'}${b.paymentIntentId ? ` · Payment: ${b.paymentIntentId}` : ''}`;
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#2c2c3a;">
-      <h2 style="margin:0 0 4px;">🎉 New party request</h2>
-      <p style="color:#6b6b7b;margin:0 0 16px;">${firstName(b.name)} was emailed the Zelle QR for the ${money(b.deposit)} deposit. Reply to this email to follow up.</p>
+      <h2 style="margin:0 0 4px;">🎉 New booking confirmed</h2>
+      <p style="color:#6b6b7b;margin:0 0 16px;">${firstName(b.name)} paid the ${money(b.deposit)} deposit via Stripe — the date is locked in. Reply to this email to follow up.</p>
       <div style="background:#F4F1FB;border-radius:14px;padding:18px 20px;">${htmlTable(b)}</div>
       <p style="margin:16px 0 4px;font-weight:600;">Contact</p>
       <p style="margin:0;color:#2c2c3a;">${b.name}<br>${b.phone}<br>${b.email}</p>
-      <p style="color:#9a3b58;font-size:12px;margin:14px 0 0;">Cancellation policy shown to customer: ${refundLine(b)}</p>
+      <p style="color:#9a9aa8;font-size:12px;margin:14px 0 0;">${ids}</p>
+      <p style="color:#9a3b58;font-size:12px;margin:8px 0 0;">Cancellation policy shown to customer: ${refundLine(b)}</p>
     </div>`.trim();
-  const text = `New party request\n\n${firstName(b.name)} was emailed the Zelle QR for the ${money(b.deposit)} deposit. Reply to follow up.\n\n${textSummary(b)}\n\nContact:\n  ${b.name}\n  ${b.phone}\n  ${b.email}\n\nCancellation policy shown to customer: ${refundLine(b)}`;
+  const text = `New booking confirmed\n\n${firstName(b.name)} paid the ${money(b.deposit)} deposit via Stripe — the date is locked in. Reply to follow up.\n\n${textSummary(b)}\n\nContact:\n  ${b.name}\n  ${b.phone}\n  ${b.email}\n\n${ids}\n\nCancellation policy shown to customer: ${refundLine(b)}`;
   await send({
     to: VENUE,
     replyTo: b.email,
-    subject: `New booking REQUEST — ${prettyDate(b.dateISO)} ${b.time} (${b.name})`,
+    subject: `New booking CONFIRMED (deposit paid) — ${prettyDate(b.dateISO)} ${b.time} (${b.name})`,
     html, text,
   });
 }
 
-// Confirmation to the customer — includes the order summary + Zelle QR to pay.
+// Paid receipt + confirmation to the customer. No payment action needed — the
+// deposit is already paid; only the balance remains, due at the venue.
 export async function sendCustomerConfirmation(b) {
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#2c2c3a;">
-      <h2 style="margin:0 0 4px;">🐤 We got your party request, ${firstName(b.name)}!</h2>
-      <p style="color:#6b6b7b;margin:0 0 20px;">Pay the <b>${money(b.deposit)} deposit</b> below to lock in your date. Your time slot is <b>locked in only after the deposit is received</b> — until then it stays open to other bookings.</p>
+      <h2 style="margin:0 0 4px;">🐤 Your party is booked, ${firstName(b.name)}!</h2>
+      <p style="color:#6b6b7b;margin:0 0 20px;">We received your <b>${money(b.deposit)} deposit</b> and your date is <b>locked in</b>. We can't wait to celebrate with you!</p>
       <div style="background:#F4F1FB;border-radius:14px;padding:18px 20px;">
-        <p style="margin:0 0 12px;font-weight:600;">Your request</p>
+        <p style="margin:0 0 12px;font-weight:600;">Your booking</p>
         ${htmlTable(b)}
-      </div>
-      <div style="text-align:center;margin:24px 0 8px;">
-        <p style="font-weight:600;margin:0 0 6px;">Pay your ${money(b.deposit)} deposit with Zelle</p>
-        <p style="color:#6b6b7b;font-size:13px;margin:0 0 14px;">Open your bank app → Zelle → Scan QR (pays <b>Waddle Waddle Inc.</b>). Send <b>${money(b.deposit)}</b>, then reply to this email.</p>
-        <img src="${QR_URL}" alt="Zelle QR code — pay Waddle Waddle Inc." width="240" style="width:240px;max-width:80%;border:1px solid #eee;border-radius:14px;" />
       </div>
       <p style="color:#6b6b7b;font-size:14px;margin:18px 0 4px;">The remaining balance of <b>${money(b.balance)}</b> is due at the venue. Questions? Just reply to this email.</p>
       <p style="color:#9a3b58;font-size:13px;margin:14px 0 0;background:#FDEEF2;border:1px solid #F4C4D2;border-radius:10px;padding:10px 14px;">⚠️ Cancellation policy: ${refundLine(b)}</p>
       <p style="color:#9a9aa8;font-size:13px;margin:16px 0 0;">${VENUE_ADDR}</p>
+      <p style="color:#c4c4cf;font-size:12px;margin:10px 0 0;">Booking ID: ${b.bookingId || '—'}</p>
     </div>`.trim();
-  const text = `We got your party request, ${firstName(b.name)}!\n\nPay the ${money(b.deposit)} deposit to lock in your date. Your time slot is locked in only after the deposit is received — until then it stays open to other bookings.\n\n${textSummary(b)}\n\nPay with Zelle: open your bank app, choose Zelle, and pay ${money(b.deposit)} to Waddle Waddle Inc.\nQR code: ${QR_URL}\nThen reply to this email.\n\nRemaining balance of ${money(b.balance)} is due at the venue.\n\nCancellation policy: ${refundLine(b)}\n\n${VENUE_ADDR}`;
+  const text = `Your party is booked, ${firstName(b.name)}!\n\nWe received your ${money(b.deposit)} deposit and your date is locked in.\n\n${textSummary(b)}\n\nThe remaining balance of ${money(b.balance)} is due at the venue. Questions? Just reply to this email.\n\nCancellation policy: ${refundLine(b)}\n\n${VENUE_ADDR}\n\nBooking ID: ${b.bookingId || '—'}`;
   await send({
     to: b.email,
     cc: VENUE, // copy the venue on the exact email the customer receives
     replyTo: SENDER,
-    subject: 'We got your Waddle Waddle NY party request 🐤',
+    subject: 'Your Waddle Waddle NY party is confirmed 🐤',
     html, text,
   });
+}
+
+// Called by the Stripe webhook once the deposit is paid. The venue alert is the
+// authoritative record and must succeed; the customer receipt is best-effort.
+export async function sendBookingEmails(b) {
+  await sendVenueAlert(b);
+  try {
+    await sendCustomerConfirmation(b);
+  } catch (err) {
+    console.error('[email] customer confirmation failed:', err);
+  }
 }

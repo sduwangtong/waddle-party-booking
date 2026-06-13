@@ -1,8 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Waddle Waddle NY — booking request to confirmation emails (SES). No online payment; the $500 deposit is collected manually via Zelle.
+Description: Waddle Waddle NY — party-booking deposit payments (Stripe Checkout + webhook + SES). Slots capped at 3 active bookings via a DynamoDB byDate index.
 
 Parameters:
+  StripeSecretKey:
+    Type: String
+    NoEcho: true
+    Description: Stripe secret key (sk_live_... or sk_test_...)
+  StripeWebhookSecret:
+    Type: String
+    NoEcho: true
+    Description: Stripe webhook signing secret (whsec_...). Use a placeholder on first deploy, then set the real value after registering the endpoint.
   SenderEmail:
     Type: String
     Default: info@waddlewaddleny.com
@@ -14,22 +22,48 @@ Parameters:
   AllowedOrigin:
     Type: String
     Default: https://sduwangtong.github.io
-    Description: Site origin allowed to call the API (CORS)
+    Description: Primary site origin allowed to call the API (CORS) and base for success/cancel redirects
+  SuccessPath:
+    Type: String
+    Default: /waddle-party-booking/
+    Description: Path under AllowedOrigin to redirect back to after checkout
 
 Globals:
   Function:
-    Runtime: nodejs20.x
+    Runtime: nodejs22.x
     MemorySize: 256
     Timeout: 15
     Architectures:
       - arm64
     Environment:
       Variables:
+        TABLE_NAME: !Ref BookingsTable
         ALLOWED_ORIGIN: !Ref AllowedOrigin
         SES_SENDER_EMAIL: !Ref SenderEmail
         VENUE_EMAIL: !Ref VenueEmail
 
 Resources:
+  BookingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: WaddleBookings
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: bookingId
+          AttributeType: S
+        - AttributeName: dateISO
+          AttributeType: S
+      KeySchema:
+        - AttributeName: bookingId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: byDate
+          KeySchema:
+            - AttributeName: dateISO
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
@@ -41,17 +75,57 @@ Resources:
         AllowHeaders:
           - Content-Type
         AllowMethods:
+          - GET
           - POST
           - OPTIONS
 
-  SubmitBookingFunction:
+  CreateCheckoutFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: WaddleBooking-SubmitBooking
-      Handler: submitBooking/index.handler
+      FunctionName: WaddleBooking-CreateCheckout
+      Handler: createCheckout/index.handler
       CodeUri: functions/
+      Environment:
+        Variables:
+          STRIPE_SECRET_KEY: !Ref StripeSecretKey
+          SUCCESS_PATH: !Ref SuccessPath
       Policies:
         - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:Query
+              Resource:
+                - !GetAtt BookingsTable.Arn
+                - !Sub "${BookingsTable.Arn}/index/*"
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /create-checkout
+            Method: POST
+
+  StripeWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: WaddleBooking-StripeWebhook
+      Handler: stripeWebhook/index.handler
+      CodeUri: functions/
+      Environment:
+        Variables:
+          STRIPE_SECRET_KEY: !Ref StripeSecretKey
+          STRIPE_WEBHOOK_SECRET: !Ref StripeWebhookSecret
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+              Resource:
+                - !GetAtt BookingsTable.Arn
+                - !Sub "${BookingsTable.Arn}/index/*"
             - Effect: Allow
               Action:
                 - ses:SendEmail
@@ -62,12 +136,36 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Path: /booking-request
+            Path: /stripe-webhook
             Method: POST
+
+  AvailabilityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: WaddleBooking-Availability
+      Handler: availability/index.handler
+      CodeUri: functions/
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: dynamodb:Query
+              Resource:
+                - !GetAtt BookingsTable.Arn
+                - !Sub "${BookingsTable.Arn}/index/*"
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /availability
+            Method: GET
 
 Outputs:
   ApiBaseUrl:
     Description: Base URL — put this in index.html API_BASE
     Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
-  SubmitUrl:
-    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/prod/booking-request"
+  CreateCheckoutUrl:
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/prod/create-checkout"
+  WebhookUrl:
+    Description: Register this as the Stripe webhook endpoint (event checkout.session.completed)
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/prod/stripe-webhook"

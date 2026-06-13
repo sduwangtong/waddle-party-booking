@@ -2,6 +2,8 @@
   "name": "waddle-booking-functions",
   "version": "1.0.0",
   "type": "module",
-  "description": "Booking-request email handler for Waddle Waddle NY (SES, no external deps)",
-  "dependencies": {}
+  "description": "Booking handlers for Waddle Waddle NY: Stripe deposit checkout, webhook, availability, SES emails",
+  "dependencies": {
+    "stripe": "^17.0.0"
+  }
 }

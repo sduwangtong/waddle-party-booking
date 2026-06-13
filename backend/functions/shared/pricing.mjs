@@ -2,7 +2,7 @@
 // The browser sends only selections (package id, kids, option quantities…); the
 // server recomputes every dollar here so the client can never dictate the numbers.
 
-export const DEPOSIT = 500;            // deposit, untaxed, collected via Zelle
+export const DEPOSIT = 500;            // deposit, untaxed, collected via Stripe Checkout
 export const TAX_RATE = 0.08625;       // 8.625% sales tax on the party total
 export const MIN_KIDS = 10;
 export const MAX_KIDS = 30;

@@ -141,6 +141,9 @@
   }
   .slot:hover { border-color:#C9BEF0; }
   .slot.sel { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .slot.full { background:#f4f4f7; border-color:var(--line); color:#b4b4c0; cursor:not-allowed; }
+  .slot.full:hover { border-color:var(--line); }
+  .slot .full-tag { display:block; font-size:11px; font-weight:600; color:#b4b4c0; margin-top:2px; }
   .hint { color:var(--muted); font-size:14px; font-style:italic; }
 
   /* Kids stepper */
@@ -389,15 +392,18 @@ const TAX_RATE = 0.08625; // 8.625% sales tax (applied to party total, not the d
 const LEAD_DAYS = 14; // parties must be booked at least 14 days out (12-day prep + buffer)
 const DISCOUNT_CODES = { DAYCARE122:0.10, IMMEMBER:0.10 }; // 10% off the pre-tax subtotal
 
-// Backend (booking-request email service). Paste the ApiBaseUrl from
+// Backend (Stripe deposit checkout + availability). Paste the ApiBaseUrl from
 // `sam deploy` here — see backend/README.md.
 const API_BASE = "https://7xgbes1yr7.execute-api.us-east-1.amazonaws.com/prod";
+const SAVE_KEY = "waddle_booking_pending"; // sessionStorage snapshot across the Stripe redirect
+const SLOT_CAPACITY = 3; // max active bookings per date+time slot (mirror of CAPACITY in capacity.mjs)
 let submitting = false; // guards against double-submit
+let availability = {};  // dateISO -> { [slot]: bookedCount } cache from /availability
 
 /* ---------------- State ---------------- */
 const state = { step:1, dateISO:null, time:null, kids:10, pkgId:null, theme:null, options:{},
   childName:"", childAge:"", childGender:"", allergies:"", notes:"", discountCode:null, discountError:"",
-  name:"", phone:"", email:"" };
+  name:"", phone:"", email:"", bookingId:null, payCancelled:false, slotFull:false };
 const STEPS = ["Date & Time","Package","Theme & Extras","Deposit"];
 let prevStep = 1;        // tracks step changes for scroll behavior
 let scrollNext = null;   // selector to reveal after a within-step selection
@@ -478,19 +484,50 @@ function renderPanel(){
   wirePanel();
 }
 
+// Remaining capacity for a slot on the selected date. Unknown (not yet fetched)
+// counts as fully open — slots only disable once /availability says they're full.
+function slotRemaining(s){
+  const booked = (availability[state.dateISO] || {})[s] || 0;
+  return SLOT_CAPACITY - booked;
+}
+
+// Fetch booked counts for a date and refresh the slot UI if it's still showing.
+// On any error we leave every slot enabled (graceful degradation) — the server
+// re-checks capacity at checkout, so a stale UI can't actually oversell.
+async function fetchAvailability(iso){
+  if (!iso) return;
+  try {
+    const res = await fetch(`${API_BASE}/availability?date=${iso}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    availability[iso] = data.booked || {};
+  } catch { return; }
+  if (state.dateISO === iso && state.step === 1){
+    const wrap = $("#slotsWrap");
+    if (wrap){ wrap.innerHTML = slotsMarkup(); wireSlots(); renderSummary(); }
+  }
+}
+
 // Just the time-slot markup — refreshed on date change without rebuilding the
 // date <input> (which would close the native picker mid-interaction).
 function slotsMarkup(){
   if (!state.dateISO) return `<p class="hint">Pick a date to see available time slots.</p>`;
   const slots = slotsFor(state.dateISO);
   const kind = isWeekend(state.dateISO) ? "Weekend" : "Weekday";
-  return `<p class="hint" style="margin-top:0">${kind} — ${slots.length} slot${slots.length>1?"s":""} available</p>
+  // Drop a selection that just filled up (availability can arrive after the pick).
+  if (state.time && slotRemaining(state.time) <= 0) state.time = null;
+  const open = slots.filter(s=>slotRemaining(s) > 0).length;
+  return `<p class="hint" style="margin-top:0">${kind} — ${open} slot${open===1?"":"s"} available</p>
     <div class="slots">` +
-    slots.map(s=>`<button class="slot ${state.time===s?"sel":""}" data-slot="${s}">${s}</button>`).join("") +
+    slots.map(s=>{
+      const full = slotRemaining(s) <= 0;
+      const cls = full ? "slot full" : `slot ${state.time===s?"sel":""}`;
+      return `<button class="${cls}" data-slot="${s}" ${full?"disabled":""}>${s}${full?`<span class="full-tag">Fully booked</span>`:""}</button>`;
+    }).join("") +
     `</div>`;
 }
 function wireSlots(){
-  document.querySelectorAll(".slot").forEach(b=>{
+  document.querySelectorAll(".slot:not(.full)").forEach(b=>{
     b.onclick = ()=>{ state.time = b.dataset.slot; scrollNext = "#kidsField"; render(); };
   });
 }
@@ -508,10 +545,17 @@ function step1(){
       <span class="dow">${dow}</span><span class="dm">${dm}</span></button>`;
   }
   const minISO = toISO(start);
+  // One-shot notices: a slot 409'd during payment, or a cold cancel returned from Stripe.
+  const slotFull = state.slotFull; state.slotFull = false;
+  const payCancelled = state.payCancelled; state.payCancelled = false;
+  const notice = slotFull ? "That time slot just filled up — please pick another date or time."
+    : payCancelled ? "Payment cancelled — your card wasn't charged. Start a new booking below."
+    : null;
 
   return `
     <h2>Select a date & time</h2>
     <p class="sub">Choose when you'd like to celebrate, then how many kids are coming.</p>
+    ${notice?`<div class="policy-note" style="background:#FDEEF2;border-color:#F4C4D2;color:#9a3b58">${notice}</div>`:""}
 
     <div class="field-label">📅 Date</div>
     <input type="date" id="dateInput" min="${minISO}" value="${state.dateISO||""}" />
@@ -605,9 +649,11 @@ function step4(){
   const t = partyTotals();
   const pkg = t.pkg;
   const sel = selectedOptions();
+  const payCancelled = state.payCancelled; state.payCancelled = false; // one-shot notice
   return `
     <h2>Review & deposit</h2>
-    <p class="sub">Confirm the details, then submit to reserve your date with a ${fmt(DEPOSIT)} Zelle deposit.</p>
+    <p class="sub">Confirm the details, then pay the ${fmt(DEPOSIT)} deposit to lock in your date.</p>
+    ${payCancelled?`<div class="policy-note" style="background:#FDEEF2;border-color:#F4C4D2;color:#9a3b58">Payment cancelled — your card wasn't charged. Your selections are saved; pay the deposit below whenever you're ready.</div>`:""}
     <div class="review-grid">
       <div class="rev"><div class="k">Date</div><div class="v">${prettyDate(state.dateISO)}</div></div>
       <div class="rev"><div class="k">Time</div><div class="v">${state.time}</div></div>
@@ -655,23 +701,26 @@ function step4(){
       <div class="sum-row"><span class="k">Subtotal</span><span class="v">${money(t.subtotal)}</span></div>
       <div class="sum-row"><span class="k">Tax (8.625%)</span><span class="v">${money(t.tax)}</span></div>
       <div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(t.saleTotal)}</span></div>
-      <div class="sum-row deposit-line"><span class="k">Deposit to confirm (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>
+      <div class="sum-row deposit-line"><span class="k">Deposit due now (card)</span><span class="v">${money(DEPOSIT)}</span></div>
       <div class="sum-row"><span class="k">Balance due at venue</span><span class="v">${money(t.balance)}</span></div>
     </div>
-    <p class="small-note">No card needed now — submit your request and we'll email you a Zelle QR for the ${fmt(DEPOSIT)} deposit to lock in your date.</p>
-    <div class="policy-note">🔒 Your date &amp; time slot are <b>locked in only after the ${fmt(DEPOSIT)} deposit is received</b> — submitting this request does not hold the slot.<br>⚠️ ${fmt(DEPOSIT)} deposit refundable only if cancelled ${LEAD_DAYS}+ days before the party.</div>`;
+    <p class="small-note">You'll be taken to a secure Stripe checkout to pay the ${fmt(DEPOSIT)} deposit by card. Your date is locked in the moment payment completes.</p>
+    <div class="policy-note">🔒 Your slot is held for 30 minutes while you complete payment, and <b>locked in the moment the ${fmt(DEPOSIT)} deposit is paid</b>.<br>⚠️ ${fmt(DEPOSIT)} deposit refundable only if cancelled ${LEAD_DAYS}+ days before the party.</div>`;
 }
 
 function step5(){
+  const idLine = state.bookingId ? `<p class="small-note">Booking ID: ${state.bookingId}</p>` : "";
   const pkg = pkgById(state.pkgId);
   if (!pkg){
-    // Edge render with no selections — generic thanks.
+    // Cold return from Stripe (snapshot lost, e.g. a different tab/device) — the
+    // payment still succeeded; the emailed confirmation has the full details.
     return `
     <div class="confirm-hero">
       <div class="big">🎉🐤🎈</div>
-      <h2>Request received!</h2>
-      <p class="sub">Thanks! We'll email you a Zelle request for the ${fmt(DEPOSIT)} deposit shortly to lock in your date.</p>
-    </div>`;
+      <h2>Deposit received!</h2>
+      <p class="sub">Your ${fmt(DEPOSIT)} deposit was received and your date is locked in. Check your email (and spam, just in case) for the full confirmation. Questions? Call (516) 243-9397.</p>
+    </div>
+    ${idLine}`;
   }
   const t = partyTotals();
   const cleanTitle = pkg.title.replace(/[⭐💖🌟👑]/g,"").trim();
@@ -695,21 +744,20 @@ Theme:            ${state.theme || "None selected"}${extraInfo}${extrasRecap}
 ${discountRecap}Subtotal:         ${money(t.subtotal)}
 Tax (8.625%):     ${money(t.tax)}
 Sale total:       ${money(t.saleTotal)}
-Zelle deposit:    ${money(DEPOSIT)} (to confirm)
+Deposit paid:     ${money(DEPOSIT)}
 Balance at venue: ${money(t.balance)}`;
   return `
     <div class="confirm-hero">
       <div class="big">🎉🐤🎈</div>
-      <h2>Request received!</h2>
-      <p class="sub">Thanks ${firstName}! We'll email a Zelle request for the ${fmt(DEPOSIT)} deposit to ${state.email || "your email"} within 24 hours. Your time slot is locked in <b>only after the deposit is received</b>.</p>
+      <h2>You're booked${firstName?`, ${firstName}`:""}!</h2>
+      <p class="sub">Your ${fmt(DEPOSIT)} deposit was received and your date is <b>locked in</b>. We just emailed your confirmation to ${state.email || "your email"} — we can't wait to celebrate!</p>
     </div>
     <div class="email-card">
-      <div class="ehead">📋 Your request</div>
+      <div class="ehead">📋 Your booking</div>
       <pre>${recap.replace(/</g,"&lt;")}</pre>
     </div>
-    ${state.emailedCustomer === false
-      ? `<p class="small-note">We got your request, but couldn't email a confirmation — please call (516) 243-9397 so we don't miss your booking.</p>`
-      : `<p class="small-note">Check your inbox (and spam, just in case) for our confirmation. Questions? Call (516) 243-9397.</p>`}`;
+    <p class="small-note">Check your inbox (and spam, just in case) for our confirmation. Questions? Call (516) 243-9397.</p>
+    ${idLine}`;
 }
 
 /* ---------------- Render: summary ---------------- */
@@ -740,16 +788,16 @@ function renderSummary(){
     body += row("Subtotal", money(t.subtotal));
     body += row("Tax (8.625%)", money(t.tax));
     body += `<div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(t.saleTotal)}</span></div>`;
-    body += `<div class="sum-row deposit-line"><span class="k">Deposit (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>`;
+    body += `<div class="sum-row deposit-line"><span class="k">Deposit due now (card)</span><span class="v">${money(DEPOSIT)}</span></div>`;
     body += row("Balance due", money(t.balance));
     compact = `<div class="sum-row grand"><span class="k">Sale total</span><span class="v">${money(t.saleTotal)}</span></div>
-      <div class="sum-row deposit-line"><span class="k">Deposit (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>`;
+      <div class="sum-row deposit-line"><span class="k">Deposit due now (card)</span><span class="v">${money(DEPOSIT)}</span></div>`;
   } else {
     // Earlier steps — show just the deposit to reserve; full price comes at review.
     body += `<div class="divider"></div>`;
-    body += `<div class="sum-row deposit-line"><span class="k">Deposit to reserve (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>`;
+    body += `<div class="sum-row deposit-line"><span class="k">Deposit to reserve (card)</span><span class="v">${money(DEPOSIT)}</span></div>`;
     body += `<div class="sum-row"><span class="k sum-empty">Full price shown at review</span><span class="v"></span></div>`;
-    compact = `<div class="sum-row deposit-line"><span class="k">Deposit to reserve (via Zelle)</span><span class="v">${money(DEPOSIT)}</span></div>`;
+    compact = `<div class="sum-row deposit-line"><span class="k">Deposit to reserve (card)</span><span class="v">${money(DEPOSIT)}</span></div>`;
   }
 
   // CTA
@@ -791,7 +839,7 @@ function ctaConfig(){
       const ok = reserveValid();
       // Re-check at click time: the inputs update without a re-render,
       // so the captured `ok` goes stale once the user fills the form.
-      return { label:"Reserve my date", disabled:!ok, action:()=>{ if(reserveValid()) submitBooking(); } };
+      return { label:`Pay ${fmt(DEPOSIT)} deposit`, disabled:!ok, action:()=>{ if(reserveValid()) payDeposit(); } };
     }
     default:
       return { label:"Start a new booking", disabled:false, action:resetBooking };
@@ -802,19 +850,21 @@ function resetBooking(){
   state.step=1; state.dateISO=null; state.time=null; state.kids=10; state.pkgId=null; state.theme=null; state.options={};
   state.childName=""; state.childAge=""; state.childGender=""; state.allergies=""; state.notes="";
   state.discountCode=null; state.discountError="";
-  state.name=""; state.phone=""; state.email="";
+  state.name=""; state.phone=""; state.email=""; state.bookingId=null; state.payCancelled=false;
   render();
 }
 
-// Submit the booking to the backend, which emails the venue + customer.
-// No redirect — on success we go straight to the step-5 confirmation.
-async function submitBooking(){
+// Create a Stripe Checkout session for the $500 deposit and redirect to it.
+// We snapshot the booking to sessionStorage first so the step-5 confirmation can
+// be rebuilt when Stripe redirects back. Confirmation emails are sent by the
+// webhook after payment — not here.
+async function payDeposit(){
   if (submitting) return;
   submitting = true;
   const btn = $("#ctaBtn");
-  if (btn){ btn.disabled = true; btn.textContent = "Sending your request…"; }
+  if (btn){ btn.disabled = true; btn.textContent = "Starting secure checkout…"; }
   try {
-    const res = await fetch(API_BASE + "/booking-request", {
+    const res = await fetch(API_BASE + "/create-checkout", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
@@ -826,14 +876,22 @@ async function submitBooking(){
         name: state.name.trim(), phone: state.phone.trim(), email: state.email.trim()
       })
     });
+    if (res.status === 409){
+      // The slot filled up between picking it and paying. Send them back to step 1.
+      delete availability[state.dateISO];
+      state.time = null; state.step = 1; state.slotFull = true;
+      submitting = false; render();
+      return;
+    }
     if (!res.ok) throw new Error("request " + res.status);
-    const data = await res.json().catch(()=>({}));
-    state.emailedCustomer = data.emailedCustomer !== false;
-    state.step = 5; render();
+    const data = await res.json();
+    if (!data.url) throw new Error("no checkout url");
+    state.bookingId = data.bookingId || null;
+    try { sessionStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch {}
+    window.location.href = data.url; // hand off to Stripe
   } catch (err){
-    if (btn){ btn.disabled = false; btn.textContent = "Reserve my date"; }
-    alert("Sorry — we couldn't send your request. Please try again, or call us at (516) 243-9397.");
-  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = `Pay ${fmt(DEPOSIT)} deposit`; }
+    alert("Sorry — we couldn't start checkout. Please try again, or call us at (516) 243-9397.");
     submitting = false;
   }
 }
@@ -852,15 +910,19 @@ function wirePanel(){
       $("#slotsWrap").innerHTML = slotsMarkup();
       wireSlots();
       renderSummary();
+      fetchAvailability(state.dateISO);
     };
     document.querySelectorAll(".chip").forEach(c=>{
       c.onclick = ()=>{
         state.dateISO = c.dataset.iso;
         if (!slotsFor(state.dateISO).includes(state.time)) state.time=null;
         scrollNext = "#sessionTimes"; render();
+        fetchAvailability(state.dateISO);
       };
     });
     wireSlots();
+    // Landing on step 1 with a date already chosen (e.g. returning from Stripe): load its slots.
+    if (state.dateISO && !(state.dateISO in availability)) fetchAvailability(state.dateISO);
     if ($("#kMinus")) $("#kMinus").onclick = ()=>{ if(state.kids>10){state.kids--; render();} };
     if ($("#kPlus")) $("#kPlus").onclick = ()=>{ if(state.kids<30){state.kids++; render();} };
   }
@@ -938,6 +1000,30 @@ function render(){
   scrollNext = null;
   prevStep = state.step;
 }
+
+// Handle a return from Stripe Checkout. Before redirecting we snapshot the booking
+// to sessionStorage; here we restore it and show the right screen, then clean the URL.
+(function handleStripeReturn(){
+  const params = new URLSearchParams(location.search);
+  const status = params.get("status");
+  if (status !== "success" && status !== "cancel") return;
+
+  let snap = null;
+  try { snap = JSON.parse(sessionStorage.getItem(SAVE_KEY) || "null"); } catch {}
+
+  if (status === "success"){
+    if (snap) Object.assign(state, snap);            // full recap; cold return → generic step 5
+    state.bookingId = params.get("booking") || (snap && snap.bookingId) || null;
+    state.step = 5;
+    try { sessionStorage.removeItem(SAVE_KEY); } catch {}
+  } else {                                           // cancel — card not charged
+    if (snap){ Object.assign(state, snap); state.step = 4; }
+    else { state.step = 1; }                         // cold cancel → start over with a note
+    state.payCancelled = true;
+  }
+  history.replaceState(null, "", location.pathname); // strip ?status=… so refresh is clean
+})();
+
 render();
 </script>
 </body>
