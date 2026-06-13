@@ -308,7 +308,7 @@ const PACKAGES = [
     features:[
       "10 kids","10 Adults","2Hr Private Party Room & Playground Access",
       "2 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid",
-      "Age Number Balloon","Classic Tableware","Setup & Cleanup"
+      "Age Number Balloon","Classic Tableware","Setup & Cleanup","Backdrop (Happy Birthday)"
     ]
   },
   {
@@ -318,7 +318,7 @@ const PACKAGES = [
       "10 kids","10 Adults","2Hr Private Party Room & Playground Access",
       "2 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid",
       "Age Number Balloon","Classic Tableware","Setup & Cleanup",
-      "Fruit Pouch for Each Kid","2L Lemonade","Bottle Water","Classic Balloon Décor",
+      "Fruit Pouch for Each Kid","2L Lemonade","Bottle Water","Balloon Garland (6ft)",
       "Backdrop (Happy Birthday)","Party Welcome Sign"
     ]
   },
@@ -329,8 +329,8 @@ const PACKAGES = [
       "10 kids","10 Adults","2Hr Private Party Room & Unlimited Playground Access",
       "3 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid","Age Number Balloon",
       "Themed Tableware","Setup & Cleanup","Fruit Pouch for Each Kid","2L Lemonade","Bottle Water",
-      "Premium Themed Balloon Décor","Backdrop (Party Theme Options)","Party Welcome Sign",
-      "Dessert Table (Snack & Cup Cakes)","Themed Balloon Garland","Pinata","Return Pass for Each Kid"
+      "Themed Balloon Arch (12ft) — balloon colors coordinated with your selected theme","Backdrop (Party Theme Options)","Party Welcome Sign",
+      "Dessert Table (Snack & Cup Cakes)","Balloon Stick for Each Kid","One Themed Character Balloon","Pinata","Return Pass for Each Kid"
     ]
   },
   {
@@ -340,8 +340,8 @@ const PACKAGES = [
       "10 kids","10 Adults","2Hr Private Party Room & Unlimited Playground Access",
       "3 Pizzas","Gold Fish for Each Kid","Juice Box for Each Kid","Age Number Balloon",
       "Themed Tableware","Setup & Cleanup","Fruit Pouch for Each Kid","2L Lemonade","Bottle Water",
-      "Premium Themed Balloon Décor","Backdrop (Party Theme Options)","Party Welcome Sign",
-      "Dessert Table (Snack & Cup Cakes)","Themed Balloon Garland","Pinata","Return Pass for Each Kid",
+      "Themed Balloon Arch (12ft) — balloon colors coordinated with your selected theme","Backdrop (Party Theme Options)","Party Welcome Sign",
+      "Dessert Table (Snack & Cup Cakes)","Balloon Stick for Each Kid","One Themed Character Balloon","Pinata","Return Pass for Each Kid",
       "Balloon Cake","Balloon Flower","Balloon Fireworks",
       "Special Gift for Birthday Kid","Photography Assistance"
     ]
@@ -390,7 +390,7 @@ const OPTION_BY_ID = Object.fromEntries(OPTIONS.flatMap(c=>c.items).map(i=>[i.id
 const DEPOSIT = 500;
 const TAX_RATE = 0.08625; // 8.625% sales tax (applied to party total, not the deposit)
 const LEAD_DAYS = 14; // parties must be booked at least 14 days out (12-day prep + buffer)
-const DISCOUNT_CODES = { DAYCARE122:0.10, IMMEMBER:0.10 }; // 10% off the pre-tax subtotal
+const DISCOUNT_CODES = { DAYCARE122:0.10, IMMEMBER:0.10, WEEKDAY1:0.10 }; // 10% off the pre-tax subtotal
 
 // Backend (Stripe deposit checkout + availability). Paste the ApiBaseUrl from
 // `sam deploy` here — see backend/README.md.

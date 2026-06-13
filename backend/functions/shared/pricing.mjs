@@ -16,7 +16,7 @@ export const PACKAGES = [
 
 // Discount codes — server-owned so the client can never invent a discount.
 // 10% off the pre-tax subtotal. MUST mirror DISCOUNT_CODES in index.html.
-export const DISCOUNT_CODES = { DAYCARE122: 0.10, IMMEMBER: 0.10 };
+export const DISCOUNT_CODES = { DAYCARE122: 0.10, IMMEMBER: 0.10, WEEKDAY1: 0.10 };
 
 // Add-on extras — MUST mirror OPTIONS in index.html.
 export const OPTIONS = [
