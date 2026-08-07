@@ -2,16 +2,18 @@
 // The browser sends only selections (package id, kids, option quantities…); the
 // server recomputes every dollar here so the client can never dictate the numbers.
 
-export const DEPOSIT = 500;            // deposit, untaxed, collected via Stripe Checkout
+export const DEPOSIT = 500;            // deposit base; charged now WITH its tax (see DEPOSIT_DUE)
 export const TAX_RATE = 0.08625;       // 8.625% sales tax on the party total
 export const MIN_KIDS = 10;
-export const MAX_KIDS = 30;
+export const MAX_KIDS = 25;
 
+// includedKids = guests covered by the base price (P1/P2: 10, P3/P4: 12).
+// Extra kids beyond that are perKid each (and each adds 1 accompanying adult).
 export const PACKAGES = [
-  { id: 1, name: 'PACKAGE 1', title: 'Classic', base: 599,  perKid: 35 },
-  { id: 2, name: 'PACKAGE 2', title: 'Premium', base: 899,  perKid: 35 },
-  { id: 3, name: 'PACKAGE 3', title: 'Luxury',  base: 1399, perKid: 35 },
-  { id: 4, name: 'PACKAGE 4', title: 'VIP',     base: 1799, perKid: 35 },
+  { id: 1, name: 'PACKAGE 1', title: 'Classic', base: 599,  perKid: 35, includedKids: 10, maxKids: 15 },
+  { id: 2, name: 'PACKAGE 2', title: 'Premium', base: 899,  perKid: 35, includedKids: 10, maxKids: 25 },
+  { id: 3, name: 'PACKAGE 3', title: 'Luxury',  base: 1399, perKid: 35, includedKids: 12, maxKids: 25 },
+  { id: 4, name: 'PACKAGE 4', title: 'VIP',     base: 1799, perKid: 35, includedKids: 12, maxKids: 25 },
 ];
 
 // Discount codes — server-owned so the client can never invent a discount.
@@ -28,15 +30,19 @@ export const OPTIONS = [
   { id: 'fruit_pouch', n: 'Fruit Pouch', p: 3 },
   { id: 'yogurt_pouch', n: 'Yogurt Pouch', p: 3 },
   { id: 'pizza_cheese', n: 'Pizza (Cheese 18")', p: 30 },
-  { id: 'veg_salad', n: 'Vegetable Salad', p: 30 },
-  { id: 'fruit_salad', n: 'Fruit Salad', p: 30 },
+  { id: 'veg_salad', n: 'Vegetable Salad', p: 50 },
+  { id: 'fruit_salad', n: 'Fruit Salad', p: 50 },
   { id: 'coke_2l', n: '2L Coke', p: 10 },
   { id: 'lemonade_2l', n: '2L Lemonade', p: 10 },
   { id: 'themed_cake', n: 'Themed Birthday Cake', p: 200 },
   { id: 'sparkling_water', n: 'Sparkling Water', p: 3 },
   { id: 'bottled_water', n: 'Bottled Water', p: 3 },
+  { id: 'chicken_parm_hero', n: '🥪 Chicken Cutlet Parmigiana Hero (1 foot)', p: 15 },
+  { id: 'eggplant_parm_hero', n: '🥪 Eggplant Parmigiana Hero (1 foot)', p: 15 },
+  { id: 'ham_provolone_hero', n: '🥪 Ham & Provolone Hero (1 foot)', p: 15 },
   { id: 'extra_adult', n: 'One Additional Adult', p: 10 },
   { id: 'grip_sock', n: 'Waddle Grip Sock', p: 3 },
+  { id: 'photography', n: '📸 Professional Photography Assistance', p: 300 },
   { id: 'outside_food_fee', n: 'Outside Food Cleaning Fee', p: 100 },
 ];
 const OPTION_BY_ID = Object.fromEntries(OPTIONS.map(o => [o.id, o]));
@@ -67,6 +73,8 @@ export function validateAndPrice(input) {
   const allergies = String(input?.allergies ?? '').trim().slice(0, 300);
   const notes = String(input?.notes ?? '').trim().slice(0, 800);
   const discCode = String(input?.discountCode ?? '').trim().toUpperCase();
+  const agreedToPolicies = input?.agreedToPolicies === true;
+  const agreedAt = String(input?.agreedAt ?? '').trim().slice(0, 40) || new Date().toISOString();
 
   if (!pkg) throw new Error('Invalid package');
   if (!Number.isInteger(kids) || kids < MIN_KIDS || kids > MAX_KIDS) throw new Error('Invalid kids count');
@@ -94,8 +102,8 @@ export function validateAndPrice(input) {
     }
   }
 
-  const extra = Math.max(0, kids - MIN_KIDS);
-  const adults = 10 + extra;                  // each extra kid includes 1 accompanying adult
+  const extra = Math.max(0, kids - pkg.includedKids);
+  const adults = pkg.includedKids + extra;    // each extra kid includes 1 accompanying adult
   const kidsExtra = extra * pkg.perKid;
   const gross = round2(pkg.base + kidsExtra + optionsSum);   // pre-discount, pre-tax
   const discountRate = DISCOUNT_CODES[discCode] || 0;        // unknown codes silently apply 0%
@@ -104,7 +112,13 @@ export function validateAndPrice(input) {
   const subtotal = round2(gross - discount);                 // 10% off applies before tax
   const tax = round2(subtotal * TAX_RATE);
   const saleTotal = round2(subtotal + tax);
-  const balance = round2(saleTotal - DEPOSIT);
+  // Split tax: the deposit charged now includes tax on its $500 base; the
+  // remainder (subtotal − 500) carries the rest of the tax, due at the venue.
+  // depositTax/depositDue are fixed ($43.13 / $543.13) since the base is always $500.
+  const depositTax = round2(DEPOSIT * TAX_RATE);     // 43.13
+  const depositDue = round2(DEPOSIT + depositTax);   // 543.13 — what Stripe charges now
+  const remainingTax = round2(tax - depositTax);     // remainder absorbs the rounding cent
+  const balance = round2(saleTotal - depositDue);    // due at venue (= remaining base + remainingTax)
 
   return {
     pkgId: pkg.id, pkgName: pkg.name, pkgTitle: pkg.title,
@@ -114,6 +128,7 @@ export function validateAndPrice(input) {
     options: selected, optionsSum,
     gross, discountCode, discountRate, discount,
     subtotal, tax, saleTotal,
-    deposit: DEPOSIT, balance,
+    deposit: DEPOSIT, depositTax, depositDue, remainingTax, balance,
+    agreedToPolicies, agreedAt,
   };
 }

@@ -27,6 +27,10 @@ Parameters:
     Type: String
     Default: /waddle-party-booking/
     Description: Path under AllowedOrigin to redirect back to after checkout
+  AdminToken:
+    Type: String
+    NoEcho: true
+    Description: Shared secret for /admin/* endpoints (sent as x-admin-token by admin.html)
 
 Globals:
   Function:
@@ -74,6 +78,7 @@ Resources:
           - https://book.waddlewaddleny.com
         AllowHeaders:
           - Content-Type
+          - x-admin-token
         AllowMethods:
           - GET
           - POST
@@ -159,6 +164,45 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /availability
             Method: GET
+
+  AdminFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-Admin"
+      Handler: admin/index.handler
+      CodeUri: functions/
+      Environment:
+        Variables:
+          ADMIN_TOKEN: !Ref AdminToken
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+              Resource:
+                - !GetAtt BookingsTable.Arn
+                - !Sub "${BookingsTable.Arn}/index/*"
+      Events:
+        ListBlocks:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /admin/blocks
+            Method: GET
+        Block:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /admin/block
+            Method: POST
+        Unblock:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /admin/unblock
+            Method: POST
 
 Outputs:
   ApiBaseUrl:

@@ -53,9 +53,9 @@ export async function handler(event) {
         quantity: 1,
         price_data: {
           currency: 'usd',
-          unit_amount: booking.deposit * 100, // server-owned, always $500
+          unit_amount: Math.round(booking.depositDue * 100), // server-owned: $500 + tax = $543.13
           product_data: {
-            name: `Party deposit — ${booking.pkgTitle}`,
+            name: `Party deposit — ${booking.pkgTitle} (incl. tax)`,
             description: `${booking.dateISO} · ${booking.time} · ${booking.kids} kids${booking.theme ? ' · ' + booking.theme : ''}`,
           },
         },

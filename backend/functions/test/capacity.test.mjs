@@ -63,3 +63,23 @@ test('cap boundary: a 3rd active hold reaches CAPACITY, a 4th would exceed it', 
   ];
   assert.equal(bookedCounts(expiredFreesSlot, NOW).T, 2);
 });
+
+test('isActiveHold: blocked is not an active hold (it fills the slot in bookedCounts instead)', () => {
+  assert.equal(isActiveHold({ status: 'blocked' }, NOW), false);
+});
+
+test('bookedCounts: a blocked item fills its slot to CAPACITY with zero bookings', () => {
+  const items = [{ time: 'T', status: 'blocked' }];
+  assert.equal(bookedCounts(items, NOW).T, CAPACITY);
+});
+
+test('bookedCounts: blocked overrides partial bookings, leaves other slots alone', () => {
+  const items = [
+    { time: 'T', status: 'paid' },
+    { time: 'T', status: 'blocked' },
+    { time: 'U', status: 'paid' },
+  ];
+  const counts = bookedCounts(items, NOW);
+  assert.equal(counts.T, CAPACITY); // blocked wins over 1 paid
+  assert.equal(counts.U, 1);        // other slot unaffected
+});

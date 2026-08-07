@@ -1,13 +1,17 @@
 // Thin DynamoDB document-client wrapper. One table, keyed by bookingId, with a
 // `byDate` GSI (PK dateISO) so we can list a day's bookings to enforce capacity.
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 
 const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE = process.env.TABLE_NAME;
 
 export async function putBooking(item) {
   await doc.send(new PutCommand({ TableName: TABLE, Item: item }));
+}
+
+export async function deleteBooking(bookingId) {
+  await doc.send(new DeleteCommand({ TableName: TABLE, Key: { bookingId } }));
 }
 
 export async function getBooking(bookingId) {

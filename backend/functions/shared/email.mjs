@@ -13,7 +13,7 @@ const VENUE_ADDR = '120 Voice Rd, Carle Place, NY 11514 · (516) 243-9397';
 const money = n => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const prettyDate = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 const firstName = full => full.split(' ')[0];
-const refundLine = b => `Your ${money(b.deposit)} deposit is refundable only if you cancel at least 14 days before the party date.`;
+const refundLine = b => `Your ${money(b.depositDue ?? b.deposit)} deposit is refundable only if you cancel at least 14 days before the party date.`;
 
 function summaryRows(b) {
   const rows = [
@@ -32,12 +32,20 @@ function summaryRows(b) {
     rows.push(['Items total', money(b.gross)]);
     rows.push([`Discount (${b.discountCode}, 10%)`, `−${money(b.discount)}`]);
   }
+  // Paid now (deposit + its tax) vs. remaining at the venue. Older bookings (pre
+  // split-tax) lack depositTax/remainingTax — fall back to the plain $500 deposit.
+  const paidLabel = b.depositTax != null
+    ? `Paid now (card · ${money(b.depositDue ?? b.deposit)} + ${money(b.depositTax)} tax)`
+    : 'Paid now (card)';
+  const remLabel = b.remainingTax != null
+    ? `Remaining at venue (${money(b.subtotal - b.deposit)} + ${money(b.remainingTax)} tax)`
+    : 'Remaining at venue';
   rows.push(
     ['Subtotal', money(b.subtotal)],
     ['Tax (8.625%)', money(b.tax)],
     ['Sale total', money(b.saleTotal)],
-    ['Deposit paid (Stripe)', money(b.deposit)],
-    ['Remaining balance (at venue)', money(b.balance)],
+    [paidLabel, money(b.depositDue ?? b.deposit)],
+    [remLabel, money(b.balance)],
   );
   return rows;
 }
@@ -73,14 +81,14 @@ export async function sendVenueAlert(b) {
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#2c2c3a;">
       <h2 style="margin:0 0 4px;">🎉 New booking confirmed</h2>
-      <p style="color:#6b6b7b;margin:0 0 16px;">${firstName(b.name)} paid the ${money(b.deposit)} deposit via Stripe — the date is locked in. Reply to this email to follow up.</p>
+      <p style="color:#6b6b7b;margin:0 0 16px;">${firstName(b.name)} paid the ${money(b.depositDue ?? b.deposit)} deposit via Stripe — the date is locked in. Reply to this email to follow up.</p>
       <div style="background:#F4F1FB;border-radius:14px;padding:18px 20px;">${htmlTable(b)}</div>
       <p style="margin:16px 0 4px;font-weight:600;">Contact</p>
       <p style="margin:0;color:#2c2c3a;">${b.name}<br>${b.phone}<br>${b.email}</p>
       <p style="color:#9a9aa8;font-size:12px;margin:14px 0 0;">${ids}</p>
       <p style="color:#9a3b58;font-size:12px;margin:8px 0 0;">Cancellation policy shown to customer: ${refundLine(b)}</p>
     </div>`.trim();
-  const text = `New booking confirmed\n\n${firstName(b.name)} paid the ${money(b.deposit)} deposit via Stripe — the date is locked in. Reply to follow up.\n\n${textSummary(b)}\n\nContact:\n  ${b.name}\n  ${b.phone}\n  ${b.email}\n\n${ids}\n\nCancellation policy shown to customer: ${refundLine(b)}`;
+  const text = `New booking confirmed\n\n${firstName(b.name)} paid the ${money(b.depositDue ?? b.deposit)} deposit via Stripe — the date is locked in. Reply to follow up.\n\n${textSummary(b)}\n\nContact:\n  ${b.name}\n  ${b.phone}\n  ${b.email}\n\n${ids}\n\nCancellation policy shown to customer: ${refundLine(b)}`;
   await send({
     to: VENUE,
     replyTo: b.email,
@@ -95,7 +103,7 @@ export async function sendCustomerConfirmation(b) {
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#2c2c3a;">
       <h2 style="margin:0 0 4px;">🐤 Your party is booked, ${firstName(b.name)}!</h2>
-      <p style="color:#6b6b7b;margin:0 0 20px;">We received your <b>${money(b.deposit)} deposit</b> and your date is <b>locked in</b>. We can't wait to celebrate with you!</p>
+      <p style="color:#6b6b7b;margin:0 0 20px;">We received your <b>${money(b.depositDue ?? b.deposit)} deposit</b> and your date is <b>locked in</b>. We can't wait to celebrate with you!</p>
       <div style="background:#F4F1FB;border-radius:14px;padding:18px 20px;">
         <p style="margin:0 0 12px;font-weight:600;">Your booking</p>
         ${htmlTable(b)}
@@ -105,7 +113,7 @@ export async function sendCustomerConfirmation(b) {
       <p style="color:#9a9aa8;font-size:13px;margin:16px 0 0;">${VENUE_ADDR}</p>
       <p style="color:#c4c4cf;font-size:12px;margin:10px 0 0;">Booking ID: ${b.bookingId || '—'}</p>
     </div>`.trim();
-  const text = `Your party is booked, ${firstName(b.name)}!\n\nWe received your ${money(b.deposit)} deposit and your date is locked in.\n\n${textSummary(b)}\n\nThe remaining balance of ${money(b.balance)} is due at the venue. Questions? Just reply to this email.\n\nCancellation policy: ${refundLine(b)}\n\n${VENUE_ADDR}\n\nBooking ID: ${b.bookingId || '—'}`;
+  const text = `Your party is booked, ${firstName(b.name)}!\n\nWe received your ${money(b.depositDue ?? b.deposit)} deposit and your date is locked in.\n\n${textSummary(b)}\n\nThe remaining balance of ${money(b.balance)} is due at the venue. Questions? Just reply to this email.\n\nCancellation policy: ${refundLine(b)}\n\n${VENUE_ADDR}\n\nBooking ID: ${b.bookingId || '—'}`;
   await send({
     to: b.email,
     cc: VENUE, // copy the venue on the exact email the customer receives
