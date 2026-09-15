@@ -3,6 +3,7 @@
 // can disable full slots. The cap itself lives in capacity.mjs (CAPACITY).
 import { queryByDate } from '../shared/dynamo.mjs';
 import { CAPACITY, bookedCounts } from '../shared/capacity.mjs';
+import { slotsFor } from '../shared/slots.mjs';
 import { ok, badRequest, serverError } from '../shared/response.mjs';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -13,7 +14,7 @@ export async function handler(event) {
 
   try {
     const nowSec = Math.floor(Date.now() / 1000);
-    const booked = bookedCounts(await queryByDate(date), nowSec);
+    const booked = bookedCounts(await queryByDate(date), nowSec, slotsFor(date));
     return ok({ date, capacity: CAPACITY, booked });
   } catch (err) {
     console.error('[availability]', err);

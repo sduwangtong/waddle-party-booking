@@ -7,6 +7,7 @@ import Stripe from 'stripe';
 import { validateAndPrice } from '../shared/pricing.mjs';
 import { putBooking, queryByDate } from '../shared/dynamo.mjs';
 import { CAPACITY, bookedCounts } from '../shared/capacity.mjs';
+import { slotsFor } from '../shared/slots.mjs';
 import { ok, badRequest, conflict, serverError } from '../shared/response.mjs';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -37,7 +38,7 @@ export async function handler(event) {
     // Capacity check: count active holds for this date+time. Accepts a small
     // oversell race under concurrent checkouts (the webhook logs it; owner resolves).
     const nowSec = Math.floor(Date.now() / 1000);
-    const counts = bookedCounts(await queryByDate(booking.dateISO), nowSec);
+    const counts = bookedCounts(await queryByDate(booking.dateISO), nowSec, slotsFor(booking.dateISO));
     if ((counts[booking.time] || 0) >= CAPACITY) {
       return conflict({ error: 'slot_full' });
     }

@@ -47,7 +47,7 @@ export async function handler(event) {
           date,
           capacity: CAPACITY,
           slots: slotsFor(date),
-          booked: bookedCounts(items, nowSec),
+          booked: bookedCounts(items, nowSec, slotsFor(date)),
           blocks: items
             .filter(i => i.status === 'blocked')
             .map(({ time, reason, createdAt }) => ({ time, reason, createdAt })),
