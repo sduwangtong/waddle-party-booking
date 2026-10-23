@@ -40,6 +40,8 @@ function summaryRows(b) {
   const remLabel = b.remainingTax != null
     ? `Remaining at venue (${money(b.subtotal - b.deposit)} + ${money(b.remainingTax)} tax)`
     : 'Remaining at venue';
+  // Older bookings (pre service-fee) have no serviceFee — omit the row for them.
+  if (b.serviceFee > 0) rows.push(['Service fee (10% of base)', money(b.serviceFee)]);
   rows.push(
     ['Subtotal', money(b.subtotal)],
     ['Tax (8.625%)', money(b.tax)],

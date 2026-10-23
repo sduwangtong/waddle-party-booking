@@ -56,20 +56,20 @@ test('total tax is unchanged from the pre-split behavior (tax on full subtotal)'
 
 test('included kids per package: P1/P2 cover 10, P3/P4 cover 12 (base, 0 extra)', () => {
   assert.equal(book({ pkgId: 1, kids: 10 }).extra, 0);
-  assert.equal(book({ pkgId: 1, kids: 10 }).subtotal, 599);
+  assert.equal(book({ pkgId: 1, kids: 10 }).subtotal, 599 + 59.9);
   assert.equal(book({ pkgId: 3, kids: 12 }).extra, 0);          // P3 base now includes 12
-  assert.equal(book({ pkgId: 3, kids: 12 }).subtotal, 1399);
-  assert.equal(book({ pkgId: 4, kids: 12 }).subtotal, 1799);
+  assert.equal(book({ pkgId: 3, kids: 12 }).subtotal, 1399 + 139.9);
+  assert.equal(book({ pkgId: 4, kids: 12 }).subtotal, 1799 + 179.9);
 });
 
 test('extra kids charge above the included count, and each adds an adult', () => {
   const p1 = book({ pkgId: 1, kids: 12 });   // 2 over P1's 10
   assert.equal(p1.extra, 2);
-  assert.equal(p1.subtotal, 599 + 2 * 35);
+  assert.equal(p1.subtotal, round2(599 + 2 * 35 + 59.9));
   assert.equal(p1.adults, 12);               // 10 included + 2 extra
   const p3 = book({ pkgId: 3, kids: 14 });   // 2 over P3's 12
   assert.equal(p3.extra, 2);
-  assert.equal(p3.subtotal, 1399 + 2 * 35);
+  assert.equal(p3.subtotal, round2(1399 + 2 * 35 + 139.9));
   assert.equal(p3.adults, 14);               // 12 included + 2 extra
 });
 
@@ -81,18 +81,19 @@ test('max party size is 25 kids; 26 is rejected', () => {
 
 test('Pkg1 worked example matches the agreed numbers', () => {
   const b = book({ pkgId: 1, kids: 10 });
-  assert.equal(b.subtotal, 599);
-  assert.equal(b.tax, 51.66);
-  assert.equal(b.saleTotal, 650.66);
+  assert.equal(b.serviceFee, 59.9);       // 10% of the $599 base
+  assert.equal(b.subtotal, 658.9);        // 599 + 59.90 service fee
+  assert.equal(b.tax, 56.83);
+  assert.equal(b.saleTotal, 715.73);
   assert.equal(b.depositDue, 543.13);
-  assert.equal(b.balance, 107.53);
+  assert.equal(b.balance, 172.6);
 });
 
 test('Package 1 accepts up to 15 kids and prices correctly (maxKids field exists on the catalog but is not enforced yet — Phase 1)', () => {
   const b = book({ pkgId: 1, kids: 15 });
   assert.equal(b.extra, 5);              // 15 - includedKids(10)
   assert.equal(b.adults, 15);            // 10 included + 5 extra
-  assert.equal(b.subtotal, 599 + 5 * 35);
+  assert.equal(b.subtotal, round2(599 + 5 * 35 + 59.9));
 });
 
 // This phase deliberately does not enforce the per-package maxKids cap yet (Package 1's
@@ -131,4 +132,20 @@ test('agreedToPolicies/agreedAt are accepted and passed through (not required ye
   });
   assert.equal(withoutAgreement.agreedToPolicies, false);
   assert.ok(typeof withoutAgreement.agreedAt === 'string' && withoutAgreement.agreedAt.length > 0);
+});
+
+test('service fee is 10% of the BASE package price only (extra kids and add-ons excluded)', () => {
+  const plain = book({ pkgId: 1, kids: 10 });
+  assert.equal(plain.serviceFee, 59.9);
+  const loaded = book({ pkgId: 1, kids: 15, options: { outside_food_fee: 1 } });
+  assert.equal(loaded.serviceFee, 59.9, 'extra kids + add-ons must not change the fee');
+  assert.equal(book({ pkgId: 3, kids: 12 }).serviceFee, 139.9);
+  assert.equal(book({ pkgId: 4, kids: 12 }).serviceFee, 179.9);
+});
+
+test('service fee is not reduced by a discount code and is included in the taxable subtotal', () => {
+  const b = book({ pkgId: 1, kids: 10, discountCode: 'WEEKDAY1' });
+  assert.equal(b.serviceFee, 59.9);
+  assert.equal(b.subtotal, round2(599 - 59.9 + 59.9));
+  assert.equal(b.tax, round2(b.subtotal * TAX_RATE));
 });

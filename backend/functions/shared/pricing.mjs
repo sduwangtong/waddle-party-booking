@@ -3,6 +3,7 @@
 // server recomputes every dollar here so the client can never dictate the numbers.
 
 export const DEPOSIT = 500;            // deposit base; charged now WITH its tax (see DEPOSIT_DUE)
+export const SERVICE_FEE_RATE = 0.10;  // 10% service fee on the BASE PACKAGE price only (not extras/add-ons); taxable. MUST mirror index.html
 export const TAX_RATE = 0.08625;       // 8.625% sales tax on the party total
 export const MIN_KIDS = 10;
 export const MAX_KIDS = 25;
@@ -109,7 +110,8 @@ export function validateAndPrice(input) {
   const discountRate = DISCOUNT_CODES[discCode] || 0;        // unknown codes silently apply 0%
   const discountCode = discountRate > 0 ? discCode : null;
   const discount = round2(gross * discountRate);
-  const subtotal = round2(gross - discount);                 // 10% off applies before tax
+  const serviceFee = round2(pkg.base * SERVICE_FEE_RATE);    // 10% of base package price only
+  const subtotal = round2(gross - discount + serviceFee);    // 10% off applies before tax; fee is taxable
   const tax = round2(subtotal * TAX_RATE);
   const saleTotal = round2(subtotal + tax);
   // Split tax: the deposit charged now includes tax on its $500 base; the
@@ -126,7 +128,7 @@ export function validateAndPrice(input) {
     childName, childAge, childGender, allergies, notes,
     name, phone, email,
     options: selected, optionsSum,
-    gross, discountCode, discountRate, discount,
+    gross, discountCode, discountRate, discount, serviceFee,
     subtotal, tax, saleTotal,
     deposit: DEPOSIT, depositTax, depositDue, remainingTax, balance,
     agreedToPolicies, agreedAt,
