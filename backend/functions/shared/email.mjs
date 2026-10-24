@@ -101,6 +101,15 @@ export async function sendVenueAlert(b) {
 
 // Paid receipt + confirmation to the customer. No payment action needed — the
 // deposit is already paid; only the balance remains, due at the venue.
+// Party notices shown on the website review step; MUST mirror index.html "Good to know".
+export const PARTY_NOTES = [
+  ['Dedicated Party Helper Included', 'A dedicated party helper will be assigned to assist with your birthday celebration and help ensure a smooth and enjoyable party experience.'],
+  ['10% Service Fee Applies to All Party Packages', 'A 10% service fee will be added to all party packages to support party assistance and event services. This fee is calculated based on the base package price only and does not apply to optional add-ons.'],
+  ['Gratuity', 'Gratuity is not included. Additional tips are always appreciated but entirely optional.'],
+];
+const notesHtml = () => `<div style="margin:16px 0 0;background:#FFF8E6;border:1px solid #F1DFA8;border-radius:10px;padding:10px 14px;">${PARTY_NOTES.map(([h, t]) => `<p style="margin:6px 0 2px;font-size:14px;font-weight:600;color:#6b540f;">${h}</p><p style="margin:0 0 6px;font-size:13px;color:#7a611c;">${t}</p>`).join('')}</div>`;
+const notesText = () => PARTY_NOTES.map(([h, t]) => `${h}\n  ${t}`).join('\n\n');
+
 export async function sendCustomerConfirmation(b) {
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#2c2c3a;">
@@ -111,11 +120,12 @@ export async function sendCustomerConfirmation(b) {
         ${htmlTable(b)}
       </div>
       <p style="color:#6b6b7b;font-size:14px;margin:18px 0 4px;">The remaining balance of <b>${money(b.balance)}</b> is due at the venue. Questions? Just reply to this email.</p>
+      ${notesHtml()}
       <p style="color:#9a3b58;font-size:13px;margin:14px 0 0;background:#FDEEF2;border:1px solid #F4C4D2;border-radius:10px;padding:10px 14px;">⚠️ Cancellation policy: ${refundLine(b)}</p>
       <p style="color:#9a9aa8;font-size:13px;margin:16px 0 0;">${VENUE_ADDR}</p>
       <p style="color:#c4c4cf;font-size:12px;margin:10px 0 0;">Booking ID: ${b.bookingId || '—'}</p>
     </div>`.trim();
-  const text = `Your party is booked, ${firstName(b.name)}!\n\nWe received your ${money(b.depositDue ?? b.deposit)} deposit and your date is locked in.\n\n${textSummary(b)}\n\nThe remaining balance of ${money(b.balance)} is due at the venue. Questions? Just reply to this email.\n\nCancellation policy: ${refundLine(b)}\n\n${VENUE_ADDR}\n\nBooking ID: ${b.bookingId || '—'}`;
+  const text = `Your party is booked, ${firstName(b.name)}!\n\nWe received your ${money(b.depositDue ?? b.deposit)} deposit and your date is locked in.\n\n${textSummary(b)}\n\nThe remaining balance of ${money(b.balance)} is due at the venue. Questions? Just reply to this email.\n\n${notesText()}\n\nCancellation policy: ${refundLine(b)}\n\n${VENUE_ADDR}\n\nBooking ID: ${b.bookingId || '—'}`;
   await send({
     to: b.email,
     cc: VENUE, // copy the venue on the exact email the customer receives

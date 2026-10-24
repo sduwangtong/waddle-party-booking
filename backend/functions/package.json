@@ -5,5 +5,8 @@
   "description": "Booking handlers for Waddle Waddle NY: Stripe deposit checkout, webhook, availability, SES emails",
   "dependencies": {
     "stripe": "^17.0.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-ses": "^3.1156.0"
   }
 }
