@@ -116,9 +116,16 @@ test('GRID_SWITCH: weekends keep 4 slots before it and show 3 from it on', () =>
   assert.deepEqual(slotsFor('2026-09-26'), RETIRED_WEEKEND);      // busy Sep Sat, unchanged
 });
 
-test('GRID_SWITCH does not touch weekdays on either side', () => {
-  assert.deepEqual(slotsFor('2026-10-12'), ['5:30 – 7:30 PM']); // Mon before
-  assert.deepEqual(slotsFor('2026-11-09'), ['5:30 – 7:30 PM']); // Mon after
+test('weekdays use the single 4:30 – 6:30 PM slot (from 2026-11-20, no switch date)', () => {
+  assert.deepEqual(slotsFor('2026-10-12'), ['4:30 – 6:30 PM']); // Mon
+  assert.deepEqual(slotsFor('2026-11-09'), ['4:30 – 6:30 PM']); // Mon
+  assert.deepEqual(slotsFor('2026-11-20'), ['4:30 – 6:30 PM']); // Fri
+});
+
+test('an existing weekday booking labelled 5:30 – 7:30 PM still holds the new weekday slot', () => {
+  const items = [{ time: '5:30 – 7:30 PM', status: 'paid' }];
+  const counts = bookedCounts(items, NOW, slotsFor('2026-11-23'));
+  assert.equal(counts['4:30 – 6:30 PM'], 1);
 });
 
 test('pre-switch dates count by label, exactly as before', () => {

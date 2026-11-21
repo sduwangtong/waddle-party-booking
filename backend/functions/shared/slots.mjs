@@ -10,7 +10,7 @@
 export const GRID_SWITCH = '2026-11-01';
 export const WEEKEND_SLOTS = ['10:30 AM – 12:30 PM', '1:30 – 3:30 PM', '4:30 – 6:30 PM'];
 export const WEEKEND_SLOTS_PRE_SWITCH = ['10:00 AM – 12:00 PM', '12:30 – 2:30 PM', '3:00 – 5:00 PM', '5:30 – 7:30 PM'];
-export const WEEKDAY_SLOTS = ['5:30 – 7:30 PM'];
+export const WEEKDAY_SLOTS = ['4:30 – 6:30 PM'];
 
 export function slotsFor(dateISO) {
   const day = new Date(dateISO + 'T12:00:00Z').getUTCDay();
